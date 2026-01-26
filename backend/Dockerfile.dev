@@ -14,9 +14,14 @@ RUN apt-get update \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# copy entrypoint script (the file is also present in the bind-mounted source during dev)
+COPY entrypoint.sh .
+RUN chmod +x ./entrypoint.sh
+
 # Do NOT copy application source so host bind-mount is authoritative for live edit
 # EXPOSE port used by uvicorn
 EXPOSE 8000
 
+ENTRYPOINT ["./entrypoint.sh"]
 # Default command for development (uvicorn with autoreload)
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
