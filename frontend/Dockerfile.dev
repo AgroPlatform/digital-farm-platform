@@ -14,4 +14,5 @@ RUN npm install --no-audit --no-fund --silent
 EXPOSE 5173
 
 # Vite default dev server; bind to 0.0.0.0 so container is reachable from host
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Run npm install on every start to ensure dependencies are up-to-date with bind-mounted package.json
+CMD ["sh", "-c", "npm install --no-audit --no-fund --silent && npm run dev -- --host 0.0.0.0"]
