@@ -53,7 +53,8 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
     ports:
-      - "3000:3000"
+      # frontend is served by nginx in the container on port 80
+      - "3000:80"
     depends_on:
       - api
     networks:
