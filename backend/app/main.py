@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.routes import health
+from app.api.routes import health, fields
 
 app = FastAPI(
     title="Digital Farm Platform API",
@@ -20,7 +20,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router, tags=["Health"])
-
+app.include_router(fields.router, tags=["Fields"])
 
 @app.get("/")
 async def root():
