@@ -1,0 +1,22 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Install build dependencies commonly needed for Python packages (psycopg2, etc.)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc build-essential libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy only requirements and install them (source will be bind-mounted in dev)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Do NOT copy application source so host bind-mount is authoritative for live edit
+# EXPOSE port used by uvicorn
+EXPOSE 8000
+
+# Default command for development (uvicorn with autoreload)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

@@ -1,0 +1,68 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: digital-farm-db
+    environment:
+      POSTGRES_DB: digital_farm
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - digital-farm-network
+
+  # FastAPI Backend
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: digital-farm-api
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/digital_farm
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      DEBUG: "True"
+      # Provide CORS origins as a JSON array string so pydantic_settings can parse it
+      # (e.g. '["http://localhost:3000","http://web:3000"]')
+      CORS_ORIGINS: '["http://localhost:3000","http://web:3000"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    networks:
+      - digital-farm-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Next.js Frontend
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: digital-farm-web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      # frontend is served by nginx in the container on port 80
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - digital-farm-network
+
+volumes:
+  postgres_data:
+
+networks:
+  digital-farm-network:
+    driver: bridge

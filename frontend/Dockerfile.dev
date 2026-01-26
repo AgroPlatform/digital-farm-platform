@@ -1,0 +1,17 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+ENV NODE_ENV=development
+
+# Copy only package files and install dependencies (source will be bind-mounted)
+COPY package.json package-lock.json* ./
+# Use `npm install` in dev image to avoid failing when package-lock.json is not present
+# (some dev setups don't commit a lockfile). Keep flags to reduce noise.
+RUN npm install --no-audit --no-fund --silent
+
+# Do not copy the app sources here to keep the container using the host files at runtime
+EXPOSE 5173
+
+# Vite default dev server; bind to 0.0.0.0 so container is reachable from host
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

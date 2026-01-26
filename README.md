@@ -145,6 +145,65 @@ digital-farm-platform/
    npm run dev
    ```
 
+## Development with Docker (live edit)
+
+Use the development compose file to run the backend and frontend with host bind-mounts so you can edit code on your machine and see changes immediately inside the containers.
+
+- Backend: runs uvicorn with --reload (port 8000)
+- Frontend: runs the Vite dev server (port 5173)
+
+Run the following from the repository root to start the dev stack:
+
+```bash
+docker-compose -f docker-compose.dev.yml up --build
+```
+
+Notes and tips:
+- The `backend` and `frontend` services mount your local source directories into the containers. Edit files locally; changes are reflected immediately inside the running containers.
+- Frontend dev server runs on port 5173 by default. Open http://localhost:5173 for the live Vite app.
+- If you prefer the production nginx + build flow, use the standard `docker-compose.yml` which serves the compiled frontend on port 3000.
+- Named volumes (`frontend_node_modules` and `backend_venv`) are used to keep container-installed dependencies separate from the host filesystem.
+
+Development notes (ports and mapping)
+- Backend dev server: http://localhost:8000 (uvicorn --reload)
+- Frontend dev server (Vite): http://localhost:5173
+
+- If you'd rather test the dev frontend on the same external port as production (3000) you can map the port in `docker-compose.dev.yml`:
+
+```yaml
+services:
+   web:
+      ports:
+         - "3000:5173" # map host:container so http://localhost:3000 opens the Vite dev server
+```
+
+Dockerfile naming and dev vs production
+- Dev Dockerfiles: `backend/Dockerfile.dev` and `frontend/Dockerfile.dev` — these install dependencies but rely on host bind-mounts for live editing and run the dev servers (uvicorn --reload and Vite).
+- Prod Dockerfiles: `backend/Dockerfile.prod` and `frontend/Dockerfile.prod` — these are used by `docker-compose.yml` for production builds and do not enable autoreload or the Vite dev server.
+
+Polish & troubleshooting
+- If you see a Compose warning about `version:` being obsolete, it's harmless but you can remove that top-level key from `docker-compose.dev.yml`.
+- If the Vite dev server doesn't pick up changes on macOS, we set `CHOKIDAR_USEPOLLING=true` in the dev compose; you can also adjust polling settings if needed.
+- Consider adding `.dockerignore` entries for `node_modules`, `.venv`, and `dist` to speed builds and avoid copying host dependency folders into images.
+
+## Production with Docker
+
+Use the production compose and prod-named Dockerfiles to run the app in production mode (no reload, static frontend served by nginx).
+
+From the repository root:
+
+```bash
+docker-compose -f docker-compose.yml up --build -d
+```
+
+- Production frontend is served on host port 3000 by default (maps to container nginx port 80).
+- Production backend listens on host port 8000 (uvicorn without --reload).
+- The production compose is configured to build using `Dockerfile.prod` files so CI/CD pipelines can build/push those images.
+
+Security and migration notes
+- Before starting production, make sure `DEBUG` is set to `False` and production secrets are provided via environment variables or a secret manager.
+- Run database migrations as part of your deployment process (e.g., `docker-compose run --rm api alembic upgrade head`).
+
 ## 🔧 Configuration
 
 ### Backend Environment Variables
