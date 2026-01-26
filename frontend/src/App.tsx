@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { login as apiLogin } from './api/auth';
+import { login as apiLogin, register as apiRegister } from './api/auth';
 import './App.css';
 
 function App() {
@@ -17,6 +17,8 @@ function App() {
   const [fullName, setFullName] = useState('');
   const [company, setCompany] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,14 +35,42 @@ function App() {
     })();
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRegisterError(null);
+    
     if (registerPassword !== confirmPassword) {
       alert('Wachtwoorden komen niet overeen');
       return;
     }
-    console.log('Register attempt:', { registerEmail, registerPassword, fullName, company, acceptTerms });
-    alert('Registratie functionaliteit wordt later geïmplementeerd voor het agro platform.');
+    
+    if (!acceptTerms) {
+      alert('U moet akkoord gaan met de algemene voorwaarden');
+      return;
+    }
+    
+    setRegisterLoading(true);
+    
+    try {
+      const result = await apiRegister(registerEmail, registerPassword, fullName);
+      console.log('Registration successful:', result);
+      alert(`Registratie succesvol! U kunt nu inloggen met ${result.email}`);
+      // Reset form
+      setRegisterEmail('');
+      setRegisterPassword('');
+      setConfirmPassword('');
+      setFullName('');
+      setCompany('');
+      setAcceptTerms(false);
+      // Switch to login tab
+      setIsLogin(true);
+    } catch (err: any) {
+      console.error('Registration failed', err);
+      setRegisterError(err?.message || 'Registratie mislukt');
+      alert(err?.message || 'Registratie mislukt');
+    } finally {
+      setRegisterLoading(false);
+    }
   };
 
   return (
