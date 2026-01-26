@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { login as apiLogin } from './api/auth';
 import './App.css';
 
 function App() {
@@ -19,8 +20,17 @@ function App() {
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login attempt:', { email, password, rememberMe });
-    alert('Login functionaliteit wordt later geïmplementeerd voor het agro platform.');
+    (async () => {
+      try {
+        const data = await apiLogin(email, password);
+        console.log('Logged in user:', data);
+        // TODO: set auth state / navigate to dashboard
+        alert(`Welkom, ${data.full_name || data.email}`);
+      } catch (err: any) {
+        console.error('Login failed', err);
+        alert(err?.message || 'Login mislukt');
+      }
+    })();
   };
 
   const handleRegisterSubmit = (e: React.FormEvent) => {

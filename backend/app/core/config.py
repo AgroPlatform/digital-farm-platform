@@ -14,7 +14,13 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    # include common Vite/React dev ports
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+
+    # Security / Auth
+    SECRET_KEY: str = "change-me-in-production"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    SECURE_COOKIE: bool = False
 
     @field_validator("CORS_ORIGINS", mode="before")
     def _parse_cors_origins(cls, v: Any) -> List[str]:
