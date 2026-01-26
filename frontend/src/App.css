@@ -1,0 +1,346 @@
+/* Reset en basisstijlen */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background-color: #f8f9fa;
+  color: #333;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+/* Hoofdcontainer - nu gecentreerde kaart */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Login card - volledige breedte binnen container */
+.login-card {
+  width: 100%;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  padding: 60px 50px;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-header {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.login-title {
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: #2d3436;
+  margin-bottom: 10px;
+  background: linear-gradient(90deg, #2d3436, #4CAF50);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.login-subtitle {
+  font-size: 1.1rem;
+  color: #636e72;
+  line-height: 1.5;
+}
+
+/* Formulier */
+.login-form {
+  flex-grow: 1;
+}
+
+.form-group {
+  margin-bottom: 28px;
+}
+
+.form-label {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3436;
+  margin-bottom: 10px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 18px 20px;
+  border: 2px solid #dfe6e9;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
+  color: #2d3436;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #4CAF50;
+  background-color: white;
+  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
+}
+
+.form-input::placeholder {
+  color: #b2bec3;
+}
+
+/* Form opties */
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.remember-me input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #4CAF50;
+  cursor: pointer;
+}
+
+.remember-label {
+  font-size: 0.95rem;
+  color: #636e72;
+  cursor: pointer;
+}
+
+.forgot-password {
+  font-size: 0.95rem;
+  color: #4CAF50;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.forgot-password:hover {
+  color: #388E3C;
+  text-decoration: underline;
+}
+
+/* Knoppen */
+.login-button {
+  width: 100%;
+  padding: 18px;
+  background: linear-gradient(135deg, #4CAF50, #2E7D32);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 25px;
+}
+
+.login-button:hover {
+  background: linear-gradient(135deg, #388E3C, #1B5E20);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+/* Registratie link */
+.register-link {
+  text-align: center;
+  color: #636e72;
+  font-size: 1rem;
+  margin-top: 20px;
+}
+
+.register-link-a {
+  color: #4CAF50;
+  font-weight: 700;
+  text-decoration: none;
+  margin-left: 5px;
+}
+
+.register-link-a:hover {
+  text-decoration: underline;
+}
+
+/* Footer */
+.login-footer {
+  margin-top: 40px;
+  padding-top: 25px;
+  border-top: 1px solid #dfe6e9;
+  text-align: center;
+}
+
+.footer-text {
+  color: #636e72;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  color: #4CAF50;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: #388E3C;
+  text-decoration: underline;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .login-card {
+    padding: 40px 30px;
+    border-radius: 20px;
+  }
+
+  .login-title {
+    font-size: 2.2rem;
+  }
+
+  .login-subtitle {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  body {
+    padding: 15px;
+  }
+
+  .login-card {
+    padding: 30px 20px;
+    border-radius: 16px;
+  }
+
+  .login-title {
+    font-size: 1.8rem;
+  }
+
+  .form-input {
+    padding: 15px;
+  }
+
+  .login-button {
+    padding: 15px;
+    font-size: 1rem;
+  }
+
+  .form-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .footer-links {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+}
+
+/* Nieuwe stijlen voor toggle en registratie */
+.form-toggle {
+  display: flex;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 6px;
+  margin-bottom: 30px;
+  border: 2px solid #dfe6e9;
+}
+
+.toggle-button {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #636e72;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.toggle-button.active {
+  background: white;
+  color: #4CAF50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.toggle-button:hover:not(.active) {
+  color: #2d3436;
+  background: rgba(76, 175, 80, 0.05);
+}
+
+.toggle-link {
+  text-align: center;
+  color: #636e72;
+  font-size: 1rem;
+  margin-top: 20px;
+}
+
+.toggle-link-button {
+  background: none;
+  border: none;
+  color: #4CAF50;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.toggle-link-button:hover {
+  text-decoration: underline;
+}
+
+.terms-link {
+  color: #4CAF50;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.terms-link:hover {
+  text-decoration: underline;
+}
+
+/* Aanpassingen voor registratieformulier */
+.login-card {
+  max-width: 500px;
+}
+
+@media (max-width: 768px) {
+  .login-card {
+    max-width: 100%;
+  }
+}
