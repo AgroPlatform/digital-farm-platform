@@ -1,22 +1,7 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import React from "react";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
-  title: "Digital Farm Platform",
-  description: "Modern agricultural management platform with FastAPI backend and Next.js frontend",
-};
-
+// Simple root layout compatible with Vite + React.
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,9 +9,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Digital Farm Platform</title>
+        <meta name="description" content="Modern agricultural management platform with FastAPI backend and Vite + React frontend" />
+      </head>
+      <body className="antialiased">
         {children}
       </body>
     </html>

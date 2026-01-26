@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from pydantic import field_validator
+from typing import List, Any
+import json
 
 
 class Settings(BaseSettings):
@@ -13,6 +15,29 @@ class Settings(BaseSettings):
     
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    def _parse_cors_origins(cls, v: Any) -> List[str]:
+        """Accept JSON array strings or comma-separated values from env/.env.
+
+        Examples accepted:
+        - ['http://x','http://y'] (JSON)
+        - http://x,http://y (comma-separated)
+        - empty string -> []
+        """
+        if isinstance(v, str):
+            s = v.strip()
+            if not s:
+                return []
+            # Try JSON first
+            try:
+                parsed = json.loads(s)
+                if isinstance(parsed, list):
+                    return parsed
+            except Exception:
+                # Fallback to comma-separated
+                return [p.strip() for p in s.split(",") if p.strip()]
+        return v
     
     class Config:
         env_file = ".env"
