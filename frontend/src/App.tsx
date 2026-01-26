@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { login as apiLogin, register as apiRegister } from './api/auth';
+import Layout from './components/Layout';
+import Dashboard from './components/Dashboard';
+import Weather from './components/pages/Weather';
+import SmartPlanner from './components/pages/SmartPlanner';
+import Crops from './components/pages/Crops';
+import Fields from './components/pages/Fields';
+import Settings from './components/pages/Settings';
 import './App.css';
 
 function App() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<{ email: string; full_name?: string } | null>(null);
   
   // Login state
   const [email, setEmail] = useState('');
@@ -19,20 +28,22 @@ function App() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  const [isLogin, setIsLogin] = useState(true);
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    (async () => {
-      try {
-        const data = await apiLogin(email, password);
-        console.log('Logged in user:', data);
-        // TODO: set auth state / navigate to dashboard
-        alert(`Welkom, ${data.full_name || data.email}`);
-      } catch (err: any) {
-        console.error('Login failed', err);
-        alert(err?.message || 'Login mislukt');
-      }
-    })();
+    try {
+      const data = await apiLogin(email, password);
+      console.log('Logged in user:', data);
+      setUser({ email: data.email, full_name: data.full_name });
+      setIsAuthenticated(true);
+      // Clear form
+      setEmail('');
+      setPassword('');
+    } catch (err: any) {
+      console.error('Login failed', err);
+      alert(err?.message || 'Login mislukt');
+    }
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
@@ -73,6 +84,33 @@ function App() {
     }
   };
 
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setUser(null);
+    // Clear any stored tokens/cookies
+    document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  };
+
+  // If authenticated, show dashboard with routing
+  if (isAuthenticated) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Layout onLogout={handleLogout} user={user} />}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="weather" element={<Weather />} />
+            <Route path="smart-planner" element={<SmartPlanner />} />
+            <Route path="crops" element={<Crops />} />
+            <Route path="fields" element={<Fields />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
+  // Otherwise show login/register page
   return (
     <div className="login-container">
       <div className="login-card">
