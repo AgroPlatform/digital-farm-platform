@@ -9,4 +9,13 @@ export async function login(email: string, password: string) {
   return res.json();
 }
 
-export default { login };
+export async function register(email: string, password: string, fullName?: string) {
+  const res = await client.post("/auth/register", { email, password, full_name: fullName });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Registration failed (${res.status})`);
+  }
+  return res.json();
+}
+
+export default { login, register };
