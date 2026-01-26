@@ -30,7 +30,9 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8000
       DEBUG: "True"
-      CORS_ORIGINS: http://localhost:3000,http://web:3000
+      # Provide CORS origins as a JSON array string so pydantic_settings can parse it
+      # (e.g. '["http://localhost:3000","http://web:3000"]')
+      CORS_ORIGINS: '["http://localhost:3000","http://web:3000"]'
     ports:
       - "8000:8000"
     depends_on:
