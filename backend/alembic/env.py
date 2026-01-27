@@ -11,6 +11,20 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from app.core.config import settings
 from app.db.session import Base
 
+# Import all model modules so that `Base.metadata` is populated for
+# Alembic autogenerate. Without these imports Alembic may think tables
+# were removed and produce destructive migrations.
+try:
+    # application models
+    import app.models.user  # noqa: F401
+    import app.models.field  # noqa: F401
+    # legacy DB models used elsewhere
+    import app.db.models  # noqa: F401
+except Exception:
+    # If imports fail in certain environments, we still want env.py to
+    # proceed. Autogenerate will be less accurate in that case.
+    pass
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
