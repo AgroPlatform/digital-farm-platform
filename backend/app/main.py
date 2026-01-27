@@ -6,6 +6,7 @@ from app.api.routes import health, fields
 from app.api.routes import health
 from app.api.routes import auth as auth_router
 from app.api.routes import user as user_router
+from app.api.routes import weather as weather_router
 from app.api.routes import fields as fields_router
 
 app = FastAPI(
@@ -29,6 +30,7 @@ app.include_router(fields.router, tags=["Fields"])
 app.include_router(auth_router.router)
 app.include_router(user_router.router)
 app.include_router(fields_router.router)
+app.include_router(weather_router.router, tags=["Weather"])
 
 
 @app.get("/")
