@@ -27,6 +27,8 @@ services:
     container_name: digital-farm-api-dev
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/digital_farm
+      # Skip Alembic migrations in dev by default (ephemeral DB volume)
+      RUN_MIGRATIONS: "false"
       API_HOST: 0.0.0.0
       API_PORT: 8000
       DEBUG: "True"
