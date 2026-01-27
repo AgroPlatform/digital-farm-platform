@@ -52,10 +52,17 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> user_mo
     try:
         payload = jwt_util.decode_access_token(token)
         user_id: str = payload.get("sub")
+        jti: str | None = payload.get("jti")
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication credentials"
+            )
+        # Check whether token has been revoked
+        if jti and jwt_util.is_jti_revoked(jti, db):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked"
             )
     except JWTError:
         raise HTTPException(
