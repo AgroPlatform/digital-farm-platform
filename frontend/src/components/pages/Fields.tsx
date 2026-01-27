@@ -1,8 +1,28 @@
 import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import './Fields.css';
 import L from 'leaflet';
+
+interface Field {
+  id: number;
+  name: string;
+  size: string;
+  soilType: string;
+  crops: string[];
+  status: 'actief' | 'inactief';
+  lastCrop: string;
+  nextAction: string;
+  address: string;
+  lat?: number;
+  lng?: number;
+}
+
+interface AddressSuggestion {
+  display_name: string;
+  lat: number;
+  lon: number;
+}
 
 // Fix for default markers in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -13,28 +33,32 @@ L.Icon.Default.mergeOptions({
 });
 
 const Fields: React.FC = () => {
-  const [fields, setFields] = useState([
-    { id: 1, name: 'Noord Akker', size: '5 ha', soilType: 'Klei', crops: ['Aardappelen', 'Tarwe'], status: 'actief', lastCrop: 'Tarwe', nextAction: 'Bemesten', address: 'Koning Albertlaan 50, 3500 Hasselt, België' },
-    { id: 2, name: 'Zuid Weide', size: '3 ha', soilType: 'Zand', crops: ['Maïs'], status: 'actief', lastCrop: 'Maïs', nextAction: 'Oogsten', address: 'Dorpsstraat 12, 3690 Zutendaal, België' },
-    { id: 3, name: 'Oost Veld', size: '8 ha', soilType: 'Leem', crops: ['Suikerbieten', 'Gerst'], status: 'inactief', lastCrop: 'Gerst', nextAction: 'Plannen', address: 'Bosweg 8, 3600 Genk, België' },
-    { id: 4, name: 'West Perceel', size: '4 ha', soilType: 'Klei', crops: ['Uien'], status: 'actief', lastCrop: 'Uien', nextAction: 'Bewateren', address: 'Maasstraat 25, 3620 Lanaken, België' },
-    { id: 5, name: 'Midden Land', size: '6 ha', soilType: 'Zandleem', crops: ['Wortelen', 'Spinazie'], status: 'actief', lastCrop: 'Spinazie', nextAction: 'Zaaien', address: 'Heideweg 15, 3650 Dilsen-Stokkem, België' },
-    { id: 6, name: 'Hoog Veld', size: '2 ha', soilType: 'Zand', crops: [], status: 'inactief', lastCrop: '-', nextAction: 'Voorbereiden', address: 'Kerkplein 3, 3680 Maaseik, België' },
-  ]);
+  const [fields, setFields] = useState<Field[]>([]);
 
-  const [selectedField, setSelectedField] = useState<number | null>(1);
+  const [selectedField, setSelectedField] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [editingField, setEditingField] = useState<number | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newField, setNewField] = useState({
+  const [newField, setNewField] = useState<{
+    name: string;
+    size: string;
+    soilType: string;
+    crops: string[];
+    status: 'actief' | 'inactief';
+    lastCrop: string;
+    nextAction: string;
+    address: string;
+    lat?: number;
+    lng?: number;
+  }>({
     name: '',
     size: '',
     soilType: 'Klei',
-    crops: [] as string[],
-    status: 'actief' as 'actief' | 'inactief',
+    crops: [],
+    status: 'actief',
     lastCrop: '',
     nextAction: '',
-    address: ''
+    address: '',
   });
 
   const soilTypes = [
@@ -175,19 +199,51 @@ const Fields: React.FC = () => {
     });
   };
 
-  // Coordinates for fields in Limburg, Belgium
-  const fieldCoordinates = [
-    { id: 1, lat: 50.9301, lng: 5.3378, polygon: null }, // Hasselt - Koning Albertlaan 50, 3500 Hasselt
-    { id: 2, lat: 50.9333, lng: 5.5667, polygon: null }, // Zutendaal - Dorpsstraat 12, 3690 Zutendaal
-    { id: 3, lat: 50.9650, lng: 5.5000, polygon: null }, // Genk - Bosweg 8, 3600 Genk
-    { id: 4, lat: 50.8833, lng: 5.6500, polygon: null }, // Lanaken - Maasstraat 25, 3620 Lanaken
-    { id: 5, lat: 51.0333, lng: 5.7333, polygon: null }, // Dilsen-Stokkem - Heideweg 15, 3650 Dilsen-Stokkem
-    { id: 6, lat: 51.1000, lng: 5.8000, polygon: null }, // Maaseik - Kerkplein 3, 3680 Maaseik
-  ];
+  // State for address autocomplete
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+
+  // Function to search for address suggestions
+  const searchAddress = async (query: string) => {
+    if (!query.trim() || query.length < 3) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    setIsSearchingAddress(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=be&limit=5`
+      );
+      const data = await response.json();
+      setAddressSuggestions(data);
+    } catch (error) {
+      console.error('Error fetching address suggestions:', error);
+      setAddressSuggestions([]);
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
+
+  // Function to handle address selection
+  const handleAddressSelect = (suggestion: AddressSuggestion) => {
+    setNewField({
+      ...newField,
+      address: suggestion.display_name,
+      lat: suggestion.lat,
+      lng: suggestion.lon
+    });
+    setAddressSuggestions([]);
+  };
 
   // Function to get coordinates for a field
   const getFieldCoordinates = (fieldId: number) => {
-    return fieldCoordinates.find(fc => fc.id === fieldId) || { lat: 50.9301, lng: 5.3378 }; // Default to Hasselt
+    const field = fields.find(f => f.id === fieldId);
+    if (field && field.lat !== undefined && field.lng !== undefined) {
+      return { lat: field.lat, lng: field.lng };
+    }
+    // Default to Hasselt center if no coordinates
+    return { lat: 50.9301, lng: 5.3378 };
   };
 
   // Function to get color based on field status
@@ -283,13 +339,39 @@ const Fields: React.FC = () => {
               </div>
               <div className="form-group">
                 <label>Adres *</label>
-                <input
-                  type="text"
-                  value={newField.address}
-                  onChange={(e) => setNewField({...newField, address: e.target.value})}
-                  placeholder="Bijv. Koning Albertlaan 50, 3500 Hasselt, België"
-                />
-                <small className="form-hint">Voer een adres in Limburg, België in</small>
+                <div className="address-autocomplete">
+                  <input
+                    type="text"
+                    value={newField.address}
+                    onChange={(e) => {
+                      setNewField({...newField, address: e.target.value});
+                      searchAddress(e.target.value);
+                    }}
+                    onFocus={() => {
+                      if (newField.address.length >= 3) {
+                        searchAddress(newField.address);
+                      }
+                    }}
+                    placeholder="Bijv. Koning Albertlaan 50, 3500 Hasselt, België"
+                  />
+                  {isSearchingAddress && (
+                    <div className="address-loading">Zoeken...</div>
+                  )}
+                  {addressSuggestions.length > 0 && (
+                    <div className="address-suggestions">
+                      {addressSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          className="address-suggestion-item"
+                          onClick={() => handleAddressSelect(suggestion)}
+                        >
+                          {suggestion.display_name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <small className="form-hint">Begin te typen om adressuggesties te zien</small>
               </div>
               <div className="form-group">
                 <label>Bodemtype</label>
@@ -623,11 +705,13 @@ const Fields: React.FC = () => {
           <div className="map-layout">
             <div className="map-section">
               <div className="map-container">
+                {/* @ts-ignore */}
                 <MapContainer 
                   center={[50.9650, 5.5000]} 
                   zoom={11} 
                   style={{ height: '600px', width: '100%', borderRadius: '16px' }}
                 >
+                  {/* @ts-ignore */}
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
