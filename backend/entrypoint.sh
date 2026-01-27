@@ -85,7 +85,7 @@ else:
   print(f'Database {db_name} still unreachable, exiting')
   sys.exit(1)
 
-# Ensure users table exists (fallback if Alembic didn't create it)
+# Ensure users table exists with all required columns (fallback if Alembic didn't create it)
 try:
   conn = psycopg2.connect(dbname=db_name, user=db_user, password=db_password, host=db_host, port=db_port)
   conn.autocommit = True
@@ -96,13 +96,16 @@ try:
       email VARCHAR(255) UNIQUE NOT NULL,
       hashed_password VARCHAR(255) NOT NULL,
       full_name VARCHAR(255),
+      phone VARCHAR(50),
+      job_title VARCHAR(255),
       is_active BOOLEAN NOT NULL DEFAULT true,
+      notification_preferences JSON,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
     );
   '''))
   cur.close()
   conn.close()
-  print('Ensured users table exists')
+  print('Ensured users table exists with all columns')
 except Exception as e:
   print('Error ensuring users table exists:', e)
   # proceed, create_user will handle missing table with error message
