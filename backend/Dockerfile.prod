@@ -1,3 +1,4 @@
+
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -12,6 +13,9 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# copy entrypoint script (the file is also present in the bind-mounted source during dev)
+COPY entrypoint.sh .
+RUN chmod +x ./entrypoint.sh
 
 # Copy application code
 COPY . .
@@ -19,5 +23,7 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
+ENTRYPOINT ["./entrypoint.sh"]
 # Run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+

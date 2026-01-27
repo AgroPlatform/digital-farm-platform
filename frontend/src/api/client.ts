@@ -32,8 +32,19 @@ export async function put(path: string, body: any, options: RequestInit = {}) {
   return res;
 }
 
+export async function del(path: string, options: RequestInit = {}) {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    ...options,
+  });
+  return res;
+}
+
 export default {
   get,
   post,
   put,
+  delete: del,
 };
