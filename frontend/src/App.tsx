@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { login as apiLogin, register as apiRegister } from './api/auth';
+import client from './api/client';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Weather from './components/pages/Weather';
@@ -84,12 +85,67 @@ function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      // Call backend logout which will revoke the token and clear the cookie server-side.
+      // credentials: 'include' ensures the access_token cookie is sent.
+      const res = await client.post('/auth/logout', {});
+
+      if (!res.ok) {
+        // Log error but still clear client state to avoid stuck UI
+        console.error('Logout failed', await res.text());
+      }
+    } catch (err) {
+      console.error('Logout request error', err);
+    }
+
+    // Always clear client-side auth state.
     setIsAuthenticated(false);
     setUser(null);
-    // Clear any stored tokens/cookies
+    // Remove any leftover client cookie just in case (server should clear it).
     document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   };
+
+  // On app load, validate server-side session (httpOnly cookie) and restore user state if valid.
+  useEffect(() => {
+    let mounted = true;
+
+    const checkAuth = async () => {
+      try {
+        const res = await client.get('/user/profile');
+        if (res.ok) {
+          const data = await res.json();
+          if (!mounted) return;
+          setUser({ email: data.email, full_name: data.full_name });
+          setIsAuthenticated(true);
+          return;
+        }
+
+        // If token invalid/expired, request server to clear cookie and clear client state
+        if (res.status === 401) {
+          try {
+            await client.post('/auth/logout', {});
+          } catch (e) {
+            // ignore
+          }
+        }
+      } catch (err) {
+        console.error('Auth check failed', err);
+      }
+
+      if (!mounted) return;
+      setIsAuthenticated(false);
+      setUser(null);
+      // Client-side attempt to remove cookie (will not affect httpOnly cookie on most browsers).
+      document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    };
+
+    checkAuth();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // If authenticated, show dashboard with routing
   if (isAuthenticated) {

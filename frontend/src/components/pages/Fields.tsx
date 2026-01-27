@@ -705,13 +705,15 @@ const Fields: React.FC = () => {
           <div className="map-layout">
             <div className="map-section">
               <div className="map-container">
-                {/* @ts-ignore */}
+                // @ts-ignore
+                {/* NOTE: react-leaflet v5 typing mismatches in this build environment; suppressing here. */}
+                // @ts-ignore
                 <MapContainer 
                   center={[50.9650, 5.5000]} 
                   zoom={11} 
                   style={{ height: '600px', width: '100%', borderRadius: '16px' }}
                 >
-                  {/* @ts-ignore */}
+                  // @ts-ignore
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

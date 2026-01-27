@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin Panel — Users</title>
+    <style>
+      body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; padding: 1rem; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 8px; }
+      th { background: #f3f4f6; text-align: left; }
+      button { margin-right: 8px; }
+    </style>
+  </head>
+  <body>
+    <h1>Admin — Users</h1>
+    <div>
+      <!-- Users will be loaded automatically on page load -->
+    </div>
+    <div id="status" style="margin-top: 1rem"></div>
+    <table id="users" style="margin-top: 1rem; display:none">
+      <thead><tr><th>ID</th><th>Email</th><th>Name</th><th>Phone</th><th>Job</th><th>Active</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <script>
+      const apiBase = '/api'
+
+      function setStatus(s) { document.getElementById('status').innerText = s }
+
+      async function loadUsers(){
+        setStatus('Loading...')
+        try{
+          const res = await fetch(apiBase + '/users')
+          if(!res.ok) throw new Error(await res.text())
+          const users = await res.json()
+          const tbody = document.querySelector('#users tbody')
+          tbody.innerHTML = ''
+          users.forEach(u => {
+            const tr = document.createElement('tr')
+            tr.innerHTML = `<td>${u.id}</td><td>${u.email}</td><td>${u.full_name||''}</td><td>${u.phone||''}</td><td>${u.job_title||''}</td><td>${u.is_active}</td><td>
+              <button onclick="toggleActive(${u.id})">toggle active</button>
+              <button onclick="deleteUser(${u.id})">delete</button>
+            </td>`
+            tbody.appendChild(tr)
+          })
+          document.getElementById('users').style.display = ''
+          setStatus('Loaded '+users.length+' users')
+        }catch(e){
+          setStatus('Error: '+e.message)
+        }
+      }
+
+      // Automatically load users when the page is ready
+      document.addEventListener('DOMContentLoaded', function() {
+        loadUsers()
+      })
+
+      async function deleteUser(id){
+        if(!confirm('Delete user '+id+'?')) return
+        const res = await fetch(apiBase + '/users/' + id, { method: 'DELETE' })
+        if(!res.ok) { setStatus('Delete failed: '+ await res.text()); return }
+        setStatus('Deleted '+id)
+        loadUsers()
+      }
+
+      async function toggleActive(id){
+        const resGet = await fetch(apiBase + '/users/' + id)
+        if(!resGet.ok) { setStatus('Fetch failed: '+ await resGet.text()); return }
+        const user = await resGet.json()
+        const res = await fetch(apiBase + '/users/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_active: !user.is_active })
+        })
+        if(!res.ok) { setStatus('Update failed: '+ await res.text()); return }
+        setStatus('Updated '+id)
+        loadUsers()
+      }
+    </script>
+  </body>
+</html>
