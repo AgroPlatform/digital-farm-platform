@@ -5,6 +5,7 @@ from app.db.models import Field, FieldHistory
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+import requests  
 
 router = APIRouter()
 
@@ -71,6 +72,7 @@ async def get_field(field_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Veld niet gevonden")
     return field
 
+
 @router.post("/fields", response_model=FieldResponse)
 async def create_field(field: FieldCreate, db: Session = Depends(get_db)):
     """Maak een nieuw veld aan"""
@@ -119,3 +121,5 @@ async def add_field_history(field_id: int, history: FieldHistoryCreate, db: Sess
     db.commit()
     db.refresh(history_entry)
     return history_entry
+
+
