@@ -26,3 +26,11 @@ class FieldHistory(Base):
     date = Column(DateTime, nullable=False)
     action = Column(String, nullable=False)
     details = Column(Text)
+
+
+class RevokedToken(Base):
+    __tablename__ = "revoked_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    jti = Column(String, unique=True, nullable=False, index=True)
+    revoked_at = Column(DateTime, nullable=False)

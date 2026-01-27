@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from pydantic import BaseModel, field_validator
 import re
 from sqlalchemy.orm import Session
@@ -6,6 +6,9 @@ from app.db.session import get_db
 from app.models import user as user_model
 from app.core import security, jwt as jwt_util
 from app.core.config import settings
+from app.db import models as db_models
+from jose import JWTError
+from datetime import datetime
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -88,3 +91,25 @@ def login(request: LoginRequest, response: Response, db: Session = Depends(get_d
     )
 
     return LoginResponse(email=user.email, full_name=user.full_name)
+
+
+@router.post("/logout")
+def logout(request: Request, response: Response, db: Session = Depends(get_db)):
+    """Logout current user by revoking the token jti and clearing the cookie."""
+    token = request.cookies.get("access_token")
+    if token:
+        try:
+            payload = jwt_util.decode_access_token(token)
+            jti = payload.get("jti")
+            if jti:
+                # mark jti as revoked
+                revoked = db_models.RevokedToken(jti=jti, revoked_at=datetime.utcnow())
+                db.add(revoked)
+                db.commit()
+        except JWTError:
+            # If token invalid we still proceed to clear cookie
+            pass
+
+    # Clear the cookie in the response so browser drops it
+    response.delete_cookie("access_token")
+    return {"message": "Logged out"}
