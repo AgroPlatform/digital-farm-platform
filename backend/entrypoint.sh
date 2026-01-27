@@ -117,7 +117,47 @@ echo "Database is up, running migrations (if any) and creating test user"
 if [ -d "alembic" ]; then
   if command -v alembic >/dev/null 2>&1; then
     echo "Running alembic upgrade head"
-    alembic upgrade head || true
+    # First check if alembic_version table exists and has a valid revision
+    if python -c "
+import os
+os.chdir('/app')
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+from alembic.util.exc import CommandError
+config = Config('alembic.ini')
+script = ScriptDirectory.from_config(config)
+try:
+    from app.db.session import SessionLocal
+    from sqlalchemy import text
+    db = SessionLocal()
+    result = db.execute(text('SELECT version_num FROM alembic_version'))
+    db_rev = result.scalar()
+    db.close()
+    if db_rev:
+        # Check if this revision exists in migration files
+        try:
+            script.get_revision(db_rev)
+            print(f'Database revision {db_rev} is valid')
+            exit(0)  # Valid revision
+        except:
+            print(f'Database revision {db_rev} not found in migration files')
+            exit(1)  # Invalid revision
+except Exception as e:
+    # Table doesn't exist or other error
+    print(f'Error checking alembic_version: {e}')
+    exit(2)  # No table or other error
+" 2>/dev/null; then
+      echo "Database has valid migration revision, running upgrade"
+      alembic upgrade head || echo "Failed to upgrade head"
+    else
+      exit_code=$?
+      if [ $exit_code -eq 1 ]; then
+        echo "Database has invalid migration revision, stamping with head"
+        alembic stamp head || echo "Failed to stamp head"
+      fi
+      echo "Running alembic upgrade head"
+      alembic upgrade head || echo "Failed to upgrade head"
+    fi
   else
     echo "alembic not installed in container, skipping migrations"
   fi
