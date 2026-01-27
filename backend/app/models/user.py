@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, func, JSON
+from sqlalchemy.orm import relationship
 from app.db.session import Base
 
 
@@ -14,3 +15,6 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     notification_preferences = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    fields = relationship("Field", back_populates="user", cascade="all, delete-orphan")
