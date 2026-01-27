@@ -114,53 +114,43 @@ PY
 
 echo "Database is up, running migrations (if any) and creating test user"
 
-if [ -d "alembic" ]; then
-  if command -v alembic >/dev/null 2>&1; then
-    echo "Running alembic upgrade head"
-    # First check if alembic_version table exists and has a valid revision
-    if python -c "
-import os
-os.chdir('/app')
-from alembic.config import Config
-from alembic.script import ScriptDirectory
-from alembic.util.exc import CommandError
-config = Config('alembic.ini')
-script = ScriptDirectory.from_config(config)
-try:
-    from app.db.session import SessionLocal
-    from sqlalchemy import text
-    db = SessionLocal()
-    result = db.execute(text('SELECT version_num FROM alembic_version'))
-    db_rev = result.scalar()
-    db.close()
-    if db_rev:
-        # Check if this revision exists in migration files
-        try:
-            script.get_revision(db_rev)
-            print(f'Database revision {db_rev} is valid')
-            exit(0)  # Valid revision
-        except:
-            print(f'Database revision {db_rev} not found in migration files')
-            exit(1)  # Invalid revision
-except Exception as e:
-    # Table doesn't exist or other error
-    print(f'Error checking alembic_version: {e}')
-    exit(2)  # No table or other error
-" 2>/dev/null; then
-      echo "Database has valid migration revision, running upgrade"
-      alembic upgrade head || echo "Failed to upgrade head"
+if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+  if [ -d "alembic" ]; then
+    if command -v alembic >/dev/null 2>&1; then
+      echo "RUN_MIGRATIONS is true: running alembic upgrade head"
+      alembic upgrade head || true
     else
-      exit_code=$?
-      if [ $exit_code -eq 1 ]; then
-        echo "Database has invalid migration revision, stamping with head"
-        alembic stamp head || echo "Failed to stamp head"
-      fi
-      echo "Running alembic upgrade head"
-      alembic upgrade head || echo "Failed to upgrade head"
+      echo "alembic not installed in container, skipping migrations"
     fi
-  else
-    echo "alembic not installed in container, skipping migrations"
   fi
+else
+  echo "RUN_MIGRATIONS is false — skipping alembic migrations"
+fi
+
+# Dev-only automatic table creation for ephemeral DBs. Set DEV_DB_CREATE=false
+# to disable this in environments where you prefer to use Alembic migrations.
+if [ "${DEV_DB_CREATE:-true}" = "true" ]; then
+  python - <<'PY'
+try:
+  # Import model modules so Base.metadata is populated with all tables
+  # (users, fields, revoked_tokens, etc.). Without these imports
+  # create_all() may not create tables defined in modules that haven't
+  # been imported yet.
+  import app.models.user  # noqa: F401
+  import app.models.field  # noqa: F401
+  import app.db.models  # noqa: F401
+  from app.db.session import engine, Base
+  print('DEV_DB_CREATE enabled: creating tables from SQLAlchemy models (if missing)')
+  Base.metadata.create_all(bind=engine)
+  print('Tables created (if they did not exist)')
+except Exception as e:
+  print('Error creating tables from models:', e)
+  # Continue; if this fails the subsequent script may still provide useful
+  # diagnostics or the container will fail later.
+  pass
+PY
+else
+  echo "DEV_DB_CREATE is false — skipping automatic create_all()"
 fi
 
 # Create test user via script (idempotent)
