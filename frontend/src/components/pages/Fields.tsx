@@ -25,12 +25,17 @@ const loadLeafletComponents = async () => {
     TileLayer = leaflet.TileLayer;
     Marker = leaflet.Marker;
     Popup = leaflet.Popup;
+    return true;
   }
+  return false;
 };
 
 // Preload de componenten
+let leafletLoaded = false;
 if (typeof window !== 'undefined') {
-  loadLeafletComponents();
+  loadLeafletComponents().then(loaded => {
+    leafletLoaded = loaded;
+  });
 }
 
 interface Field {
@@ -61,6 +66,7 @@ const Fields: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [editingField, setEditingField] = useState<number | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [leafletLoaded, setLeafletLoaded] = useState(false);
   const [newField, setNewField] = useState<{
     name: string;
     size: string;
@@ -96,6 +102,12 @@ const Fields: React.FC = () => {
 
   useEffect(() => {
     loadFields();
+    // Load leaflet components on mount
+    if (typeof window !== 'undefined' && !leafletLoaded) {
+      loadLeafletComponents().then(loaded => {
+        setLeafletLoaded(loaded);
+      });
+    }
   }, []);
 
   const loadFields = async () => {
@@ -342,6 +354,44 @@ const Fields: React.FC = () => {
       const avgLng = fieldsWithCoords.reduce((sum, f) => sum + (f.lng || 0), 0) / fieldsWithCoords.length;
       center = [avgLat, avgLng];
       zoom = fieldsWithCoords.length === 1 ? 14 : 12;
+    }
+
+    // Check if leaflet components are loaded
+    if (!MapContainer || !TileLayer || !Marker || !Popup) {
+      return (
+        <div className="map-view-container">
+          <div className="map-view-header">
+            <h3>🗺️ Velden op Kaart</h3>
+            <p>Kaart wordt geladen...</p>
+          </div>
+          <div className="map-layout">
+            <div className="map-section">
+              <div className="map-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '600px' }}>
+                <div className="loading-map">
+                  <p>Kaartcomponenten laden...</p>
+                  <button className="primary-button" onClick={() => window.location.reload()}>
+                    🔄 Herlaad pagina
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="details-section">
+              <div className="field-details-card">
+                <div className="no-selection">
+                  <p>Kaart wordt geladen</p>
+                  <p className="hint">Probeer de lijstweergave als de kaart niet laadt</p>
+                  <button 
+                    className="primary-button"
+                    onClick={() => setViewMode('list')}
+                  >
+                    📋 Naar lijstweergave
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
     }
 
     return (
@@ -710,6 +760,11 @@ const Fields: React.FC = () => {
             <p>Actieve Gewassen</p>
           </div>
         </div>
+      </div>
+
+      {/* Main Content - Map or List View */}
+      <div className="fields-main-content">
+        {viewMode === 'map' ? renderMapView() : renderListView()}
       </div>
 
       {/* Soil Types Card */}

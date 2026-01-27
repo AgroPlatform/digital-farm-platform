@@ -707,6 +707,12 @@
   transform: translateY(-50%);
 }
 
+/* Fields Main Content */
+.fields-main-content {
+  margin-top: 40px;
+  margin-bottom: 40px;
+}
+
 /* Field Map Card */
 .field-map-card {
   grid-column: span 7;
@@ -1323,6 +1329,21 @@
   font-size: 0.85rem;
   margin-top: 8px;
   font-style: italic;
+}
+
+/* Loading Map State */
+.loading-map {
+  text-align: center;
+  padding: 40px;
+  background: #f8f9fa;
+  border-radius: 16px;
+  width: 100%;
+}
+
+.loading-map p {
+  color: #636e72;
+  margin-bottom: 20px;
+  font-size: 1.1rem;
 }
 
 /* Leaflet Map Customization */
