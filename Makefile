@@ -1,10 +1,10 @@
 .PHONY: dev backend frontend
 
 dev:
-	docker-compose -f docker-compose.dev.yml up --build
+	docker-compose -f docker-compose.dev.yml up --build -d
 
 backend:
-	cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	docker compose -f docker-compose.dev.yml up --build -d api
 
 frontend:
-	cd frontend && npm run dev
+	docker compose -f docker-compose.dev.yml up --build -d frontend
