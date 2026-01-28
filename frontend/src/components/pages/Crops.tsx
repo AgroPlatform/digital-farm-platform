@@ -1,25 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Crops.css';
+import { getCrops, updateCrop, createCrop } from '../../api/crops';
+import type { Crop } from '../../types/crop';
 
 const Crops: React.FC = () => {
-  const [crops, setCrops] = useState([
-    { id: 1, name: 'Aardappelen', type: 'Knolgewas', season: 'Lente', duration: '120 dagen', water: 'Medium', yield: '40 ton/ha', status: 'actief' },
-    { id: 2, name: 'Tarwe', type: 'Graan', season: 'Herfst', duration: '240 dagen', water: 'Laag', yield: '8 ton/ha', status: 'actief' },
-    { id: 3, name: 'Maïs', type: 'Graan', season: 'Zomer', duration: '90 dagen', water: 'Hoog', yield: '12 ton/ha', status: 'actief' },
-    { id: 4, name: 'Suikerbieten', type: 'Knolgewas', season: 'Lente', duration: '180 dagen', water: 'Medium', yield: '60 ton/ha', status: 'inactief' },
-    { id: 5, name: 'Gerst', type: 'Graan', season: 'Herfst', duration: '210 dagen', water: 'Laag', yield: '7 ton/ha', status: 'actief' },
-    { id: 6, name: 'Uien', type: 'Bolgewas', season: 'Lente', duration: '150 dagen', water: 'Medium', yield: '50 ton/ha', status: 'actief' },
-    { id: 7, name: 'Wortelen', type: 'Knolgewas', season: 'Lente', duration: '100 dagen', water: 'Medium', yield: '45 ton/ha', status: 'inactief' },
-    { id: 8, name: 'Spinazie', type: 'Bladgroente', season: 'Voorjaar', duration: '45 dagen', water: 'Hoog', yield: '20 ton/ha', status: 'actief' },
-  ]);
-
-  const [selectedCrop, setSelectedCrop] = useState<number | null>(1);
+  const [crops, setCrops] = useState<Crop[]>([]);
+  const [selectedCrop, setSelectedCrop] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterSeason, setFilterSeason] = useState('all');
 
   const cropTypes = ['all', 'Knolgewas', 'Graan', 'Bolgewas', 'Bladgroente'];
   const seasons = ['all', 'Lente', 'Zomer', 'Herfst', 'Voorjaar'];
+
+  useEffect(() => {
+    const fetchCrops = async () => {
+      try {
+        const data = await getCrops();
+        setCrops(data);
+        if (data.length > 0) {
+          setSelectedCrop(data[0].id);
+        }
+      } catch (error) {
+        console.error("Failed to fetch crops:", error);
+      }
+    };
+
+    fetchCrops();
+  }, []);
 
   const filteredCrops = crops.filter(crop => {
     const matchesSearch = crop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -31,100 +39,94 @@ const Crops: React.FC = () => {
 
   const selectedCropData = crops.find(crop => crop.id === selectedCrop);
 
-  const addNewCrop = () => {
-    const newId = crops.length + 1;
-    const newCrop = {
-      id: newId,
-      name: `Nieuw Gewas ${newId}`,
-      type: 'Knolgewas',
-      season: 'Lente',
-      duration: '100 dagen',
-      water: 'Medium',
-      yield: '0 ton/ha',
-      status: 'actief'
-    };
-    setCrops([...crops, newCrop]);
-    setSelectedCrop(newId);
-  };
+  const toggleCropStatus = async (id: number) => {
+    const crop = crops.find(c => c.id === id);
+    if (!crop) return;
 
-  const toggleCropStatus = (id: number) => {
-    setCrops(crops.map(crop => 
-      crop.id === id 
-        ? { ...crop, status: crop.status === 'actief' ? 'inactief' : 'actief' }
-        : crop
-    ));
+    const newStatus = crop.status === 'actief' ? 'inactief' : 'actief';
+    
+    try {
+      const updatedCrop = await updateCrop(id, { status: newStatus });
+      setCrops(crops.map(c => c.id === id ? updatedCrop : c));
+    } catch (error) {
+      console.error("Failed to update crop status:", error);
+    }
   };
 
   return (
     <div className="crops-page">
       <div className="page-header">
         <div className="header-content">
-          <h1>🌽 Gewassen Database</h1>
+          <h1>🌽 <span className="header-title-text">Gewassen Database</span></h1>
           <p>Beheer en bekijk informatie over alle gewassen</p>
         </div>
-        <button className="primary-button" onClick={addNewCrop}>
-          <span className="button-icon">➕</span>
-          Nieuw Gewas
-        </button>
       </div>
 
-      <div className="crops-grid">
-        {/* Filters */}
-        <div className="filters-card">
-          <h3>🔍 Filters</h3>
-          <div className="search-box">
+      {/* Filters Section - Full Width */}
+      <div className="filters-section">
+        <div className="filters-container">
+          <div className="search-wrapper">
+            <span className="search-icon">🔍</span>
             <input
               type="text"
-              placeholder="Zoek gewas..."
+              placeholder="Zoek in gewassen..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <button className="search-btn">🔍</button>
           </div>
-          <div className="filter-group">
-            <label>Type Gewas</label>
-            <div className="filter-buttons">
-              {cropTypes.map(type => (
-                <button
-                  key={type}
-                  className={`filter-btn ${filterType === type ? 'active' : ''}`}
-                  onClick={() => setFilterType(type)}
-                >
-                  {type === 'all' ? 'Alle' : type}
-                </button>
-              ))}
+          
+          <div className="filters-row">
+            <div className="filter-dropdown">
+              <span className="filter-label">Type:</span>
+              <div className="filter-options">
+                {cropTypes.map(type => (
+                  <button
+                    key={type}
+                    className={`filter-chip ${filterType === type ? 'active' : ''}`}
+                    onClick={() => setFilterType(type)}
+                  >
+                    {type === 'all' ? 'Alles' : type}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="filter-group">
-            <label>Seizoen</label>
-            <div className="filter-buttons">
-              {seasons.map(season => (
-                <button
-                  key={season}
-                  className={`filter-btn ${filterSeason === season ? 'active' : ''}`}
-                  onClick={() => setFilterSeason(season)}
-                >
-                  {season === 'all' ? 'Alle' : season}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="filter-stats">
-            <div className="stat">
-              <span className="stat-label">Totaal</span>
-              <span className="stat-value">{crops.length}</span>
-            </div>
-            <div className="stat">
-              <span className="stat-label">Actief</span>
-              <span className="stat-value">{crops.filter(c => c.status === 'actief').length}</span>
-            </div>
-            <div className="stat">
-              <span className="stat-label">Inactief</span>
-              <span className="stat-value">{crops.filter(c => c.status === 'inactief').length}</span>
+
+            <div className="filter-divider"></div>
+
+            <div className="filter-dropdown">
+              <span className="filter-label">Seizoen:</span>
+              <div className="filter-options">
+                {seasons.map(season => (
+                  <button
+                    key={season}
+                    className={`filter-chip ${filterSeason === season ? 'active' : ''}`}
+                    onClick={() => setFilterSeason(season)}
+                  >
+                    {season === 'all' ? 'Alles' : season}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
+        <div className="stats-row">
+          <div className="stat-badge">
+            <span className="stat-dot total"></span>
+            Totaal: <strong>{crops.length}</strong>
+          </div>
+          <div className="stat-badge">
+            <span className="stat-dot active"></span>
+            Actief: <strong>{crops.filter(c => c.status === 'actief').length}</strong>
+          </div>
+          <div className="stat-badge">
+            <span className="stat-dot inactive"></span>
+            Inactief: <strong>{crops.filter(c => c.status === 'inactief').length}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="crops-grid">
         {/* Crops List */}
         <div className="crops-list-card">
           <h3>🌾 Gewassen Lijst</h3>
@@ -137,9 +139,7 @@ const Crops: React.FC = () => {
               >
                 <div className="crop-header">
                   <div className="crop-icon">
-                    {crop.type === 'Knolgewas' ? '🥔' : 
-                     crop.type === 'Graan' ? '🌾' : 
-                     crop.type === 'Bolgewas' ? '🧅' : '🥬'}
+                    {crop.icon}
                   </div>
                   <div className="crop-info">
                     <h4>{crop.name}</h4>
@@ -155,15 +155,6 @@ const Crops: React.FC = () => {
                     {crop.status === 'actief' ? '✅' : '⏸️'}
                   </button>
                 </div>
-                <div className="crop-details">
-                  <span className="crop-detail">📅 {crop.season}</span>
-                  <span className="crop-detail">⏱️ {crop.duration}</span>
-                  <span className="crop-detail">💧 {crop.water}</span>
-                </div>
-                <div className="crop-yield">
-                  <span className="yield-label">Opbrengst:</span>
-                  <span className="yield-value">{crop.yield}</span>
-                </div>
               </div>
             ))}
           </div>
@@ -176,9 +167,7 @@ const Crops: React.FC = () => {
             <div className="crop-detail-content">
               <div className="crop-header-large">
                 <div className="crop-icon-large">
-                  {selectedCropData.type === 'Knolgewas' ? '🥔' : 
-                   selectedCropData.type === 'Graan' ? '🌾' : 
-                   selectedCropData.type === 'Bolgewas' ? '🧅' : '🥬'}
+                  {selectedCropData.icon}
                 </div>
                 <div className="crop-title">
                   <h2>{selectedCropData.name}</h2>
@@ -207,14 +196,14 @@ const Crops: React.FC = () => {
                   <span className="stat-icon">💧</span>
                   <div className="stat-info">
                     <span className="stat-label">Waterbehoefte</span>
-                    <span className="stat-value">{selectedCropData.water}</span>
+                    <span className="stat-value">{selectedCropData.water_needs}</span>
                   </div>
                 </div>
                 <div className="crop-stat">
                   <span className="stat-icon">📊</span>
                   <div className="stat-info">
                     <span className="stat-label">Opbrengst</span>
-                    <span className="stat-value">{selectedCropData.yield}</span>
+                    <span className="stat-value">{selectedCropData.expected_yield}</span>
                   </div>
                 </div>
               </div>
