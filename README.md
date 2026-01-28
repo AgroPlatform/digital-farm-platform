@@ -83,6 +83,8 @@ digital-farm-platform/
 
 ### Manual Setup (Without Docker)
 
+If you prefer, the repo includes a `Makefile` with shortcuts: `make backend` (FastAPI) and `make frontend` (Vite).
+
 #### Backend Setup
 
 1. **Navigate to backend directory**
@@ -139,6 +141,12 @@ digital-farm-platform/
    ```
 
 ## Development with Docker (live edit)
+
+You can also use the provided `Makefile` shortcut:
+
+```bash
+make dev
+```
 
 Use the development compose file to run the backend and frontend with host bind-mounts so you can edit code on your machine and see changes immediately inside the containers.
 
