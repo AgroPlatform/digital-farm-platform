@@ -45,7 +45,7 @@ const SmartPlanner: React.FC = () => {
         const adviceArr: Advice[] = [];
 
         for (let field of fieldsData) {
-          // default weather
+          // Default weather object
           let weather: WeatherData = {
             temp: 20,
             condition: "onbekend",
@@ -53,23 +53,40 @@ const SmartPlanner: React.FC = () => {
             wind: 0,
           };
 
-          if (field.lat && field.lng) {
-            try {
-              const weatherRes = await fetch(
-                `http://localhost:8000/weather?lat=${field.lat}&lng=${field.lng}`
-              );
-              if (weatherRes.ok) {
-                const weatherJson = await weatherRes.json();
-                weather = {
-                  temp: Math.round(weatherJson.main?.temp || 20),
-                  condition: weatherJson.weather?.[0]?.description || "onbekend",
-                  humidity: weatherJson.main?.humidity || 78,
-                  wind: Math.round((weatherJson.wind?.speed || 0) * 3.6),
-                };
-              }
-            } catch (err) {
-              console.warn(`Weather fetch failed for ${field.name}`, err);
+          try {
+            // 1️⃣ Haal eerst de stad van het veld via jouw endpoint
+            const cityRes = await fetch(
+              `http://localhost:8000/fields/${field.id}/city`,
+              { credentials: "include" } // nodig als backend auth vereist
+            );
+
+            let city = "Antwerpen"; // fallback
+            if (cityRes.ok) {
+              const cityJson = await cityRes.json();
+              if (cityJson.city) city = cityJson.city;
+            } else {
+              console.warn(`City API returned ${cityRes.status} for field ${field.id}`);
             }
+
+            // 2️⃣ Gebruik de city om weer op te halen
+            const weatherRes = await fetch(
+              `http://localhost:8000/weather?city=${encodeURIComponent(city)}`,
+              { credentials: "include" }
+            );
+
+            if (weatherRes.ok) {
+              const weatherJson = await weatherRes.json();
+              weather = {
+                temp: Math.round(weatherJson.main?.temp || 20),
+                condition: weatherJson.weather?.[0]?.description || "onbekend",
+                humidity: weatherJson.main?.humidity || 78,
+                wind: Math.round((weatherJson.wind?.speed || 0) * 3.6),
+              };
+            } else {
+              console.warn(`Weather API returned ${weatherRes.status} for city ${city}`);
+            }
+          } catch (err) {
+            console.warn(`Weather fetch failed for ${field.name}`, err);
           }
 
           adviceArr.push({
@@ -91,52 +108,97 @@ const SmartPlanner: React.FC = () => {
   }, []);
 
   const generateAdvice = (field: Field, weather: WeatherData) => {
-    let advice = "Geen actie nodig";
+  let advice = "Geen directe actie nodig";
 
-    if (field.status === "actief") {
-      if (field.crops.includes("Tarwe")) {
-        advice = weather.temp > 10 ? "Irrigatie aanbevolen voor Tarwe" : "Nog even wachten met irrigatie";
-      }
-      if (field.crops.includes("Maïs")) {
-        advice = weather.temp > 15 ? "Bemesting Maïs uitvoeren" : "Bemesting uitstellen";
-      }
-      if (field.crops.includes("Aardappelen")) {
-        advice = weather.humidity > 70 ? "Controleer op schimmels bij Aardappelen" : "Alles goed";
-      }
-    }
+  // ❄️ Vorst / zeer koud
+  if (weather.temp <= 3) {
+    advice = "Risico op vorst – vermijd werkzaamheden op het veld";
+  }
 
-    return { field: field.name, advice };
+  // 🌫️ Hoge luchtvochtigheid / mist
+  else if (weather.humidity >= 85) {
+    advice = "Hoge luchtvochtigheid – verhoogd risico op schimmels";
+  }
+
+  // 🌬️ Veel wind
+  else if (weather.wind >= 30) {
+    advice = "Sterke wind – stel sproeien of bemesten uit";
+  }
+
+  // 🌧️ Regen
+  else if (
+    weather.condition.toLowerCase().includes("regen") ||
+    weather.condition.toLowerCase().includes("rain")
+  ) {
+    advice = "Regen verwacht – irrigatie is niet nodig";
+  }
+
+  // ☀️ Warm & droog
+  else if (weather.temp >= 20 && weather.humidity < 60) {
+    advice = "Warm en droog weer – controleer bodemvocht";
+  }
+
+  return {
+    field: field.name,
+    advice,
   };
-
-  if (loading) return <div className="dashboard-container p-6">Advies laden…</div>;
-
-  return (
-    <div className="dashboard-container p-6">
-      <div className="content-grid">
-        {adviceList.map((item, idx) => (
-          <div
-            key={idx}
-            className="content-card"
-            style={{
-              borderLeft: "4px solid #FFA500",
-              padding: "20px",
-            }}
-          >
-            <h3>{item.field}</h3>
-            <p><strong>Advies:</strong> {item.advice}</p>
-            <p><strong>Grootte:</strong> {item.fieldInfo.size} ha</p>
-            <p><strong>Bodemtype:</strong> {item.fieldInfo.soil_type}</p>
-            <p><strong>Status:</strong> {item.fieldInfo.status}</p>
-            <p><strong>Laatste gewas:</strong> {item.fieldInfo.last_crop}</p>
-            <p><strong>Volgende actie:</strong> {item.fieldInfo.next_action}</p>
-            <hr style={{ margin: "10px 0" }} />
-            <p><strong>Weer:</strong> {item.weather.condition}, {item.weather.temp}°C</p>
-            <p>💧 Vochtigheid: {item.weather.humidity}% | 💨 Wind: {item.weather.wind} km/h</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 };
 
+  if (loading)
+    return <div className="dashboard-container p-6">Advies laden…</div>;
+
+  return (
+  <div className="dashboard-container p-6">
+    <div className="page-header">
+      <h1>📋 Smart Planner</h1>
+      <p>Automatisch veldadvies op basis van actuele weersomstandigheden</p>
+    </div>
+
+    <div className="smartplanner-flex">
+
+      {adviceList.map((item, idx) => (
+        <div key={idx} className="smartplanner-card">
+          {/* Header */}
+          <div className="card-header">
+            <h3>{item.field}</h3>
+            <span className="status-badge">{item.fieldInfo.status}</span>
+          </div>
+
+          {/* Advice */}
+          <div className="advice-box">
+            <span className="advice-icon">💡</span>
+            <div>
+              <p className="advice-title">Advies</p>
+              <p className="advice-text">{item.advice}</p>
+            </div>
+          </div>
+
+          {/* Weather */}
+          <div className="weather-box">
+            <h4>🌦️ Weer</h4>
+            <div className="weather-row">
+              <span>{item.weather.condition}</span>
+              <strong>{item.weather.temp}°C</strong>
+            </div>
+            <div className="weather-details">
+              <span>💧 {item.weather.humidity}%</span>
+              <span>💨 {item.weather.wind} km/h</span>
+            </div>
+          </div>
+
+          {/* Field info */}
+          <div className="field-info">
+            <div><strong>Grootte:</strong> {item.fieldInfo.size} ha</div>
+            <div><strong>Bodem:</strong> {item.fieldInfo.soil_type}</div>
+            <div><strong>Laatste gewas:</strong> {item.fieldInfo.last_crop || "—"}</div>
+            <div><strong>Volgende actie:</strong> {item.fieldInfo.next_action || "—"}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+};
+
+// ✅ Belangrijk: default export
 export default SmartPlanner;
