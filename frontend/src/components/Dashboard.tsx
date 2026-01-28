@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./Dashboard.css";
 import * as fieldsApi from "../api/fields";
+import type { Field as ApiField } from "../api/fields";
 
 interface User {
   email: string;
@@ -37,6 +38,21 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<Activity[]>([]);
 
+  const mapField = (field: ApiField): Field => {
+    const crop = field.last_crop ?? field.crops?.[0] ?? "Onbekend";
+    const status: Field["status"] = field.status === "inactief" ? "Geoogst" : "Groei";
+    const progress = status === "Geoogst" ? 100 : status === "Groei" ? 60 : 20;
+
+    return {
+      id: field.id,
+      name: field.name,
+      size: field.size,
+      status,
+      crop,
+      progress,
+    };
+  };
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -48,8 +64,9 @@ const Dashboard: React.FC = () => {
         setUser(userJson);
 
         // 2️⃣ Haal velden op
-        const fieldsData: Field[] = await fieldsApi.getFields();
-        setFields(fieldsData);
+  const fieldsData = await fieldsApi.getFields();
+  const mappedFields = fieldsData.map(mapField);
+  setFields(mappedFields);
 
         // 3️⃣ Haal weer op
         const weatherRes = await fetch("http://localhost:8000/weather?city=Antwerpen");
@@ -62,7 +79,7 @@ const Dashboard: React.FC = () => {
         });
 
         // 4️⃣ Genereer recente activiteiten
-        const recentActivities: Activity[] = fieldsData.slice(0, 4).map((field) => ({
+        const recentActivities: Activity[] = mappedFields.slice(0, 4).map((field) => ({
           user: field.name,
           action: `${field.crop} status: ${field.status}`,
           time: "Vandaag",
@@ -89,11 +106,18 @@ const Dashboard: React.FC = () => {
   const totalCrops = fields.reduce((sum, f) => sum + 1, 0); // 1 per veld
   const totalArea = fields.reduce((sum, f) => sum + f.size, 0);
 
-  const stats = [
+  const harvestStatus = totalFields > 0 ? Math.round((activeFields / totalFields) * 100) : 0;
+
+  const stats: Array<{
+    title: string;
+    value: number | string;
+    icon: string;
+    change?: string;
+  }> = [
     { title: "Totaal Velden", value: totalFields, icon: "🌾" },
     { title: "Actieve Gewassen", value: totalCrops, icon: "🌽" },
     { title: "Oppervlakte", value: `${totalArea} ha`, icon: "📏" },
-    { title: "Oogst Status", value: `${Math.round((activeFields/totalFields)*100)}%`,icon: "📊" },
+    { title: "Oogst Status", value: `${harvestStatus}%`, icon: "📊" },
   ];
 
   return (
@@ -112,7 +136,9 @@ const Dashboard: React.FC = () => {
           <div className="stat-card" key={idx}>
             <div className="stat-header">
               <span className="stat-icon">{stat.icon}</span>
-              <span className="stat-change positive">{stat.change}</span>
+              {stat.change && (
+                <span className="stat-change positive">{stat.change}</span>
+              )}
             </div>
             <h3 className="stat-value">{stat.value}</h3>
             <p className="stat-title">{stat.title}</p>
