@@ -1,5 +1,7 @@
 import client from "./client";
 
+export type FieldStatus = "actief" | "inactief";
+
 export interface Field {
   id: number;
   user_id: number;
@@ -7,7 +9,7 @@ export interface Field {
   size: number; // in hectares
   soil_type: string;
   crops: string[];
-  status: string; // "actief" | "inactief"
+  status: FieldStatus;
   last_crop?: string;
   next_action?: string;
   address?: string;
@@ -20,7 +22,7 @@ export interface FieldCreate {
   size: number;
   soil_type: string;
   crops?: string[];
-  status?: string;
+  status?: FieldStatus;
   last_crop?: string;
   next_action?: string;
   address?: string;

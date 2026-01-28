@@ -1,21 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./SmartPlanner.css";
 import * as fieldsApi from "../../api/fields";
-
-interface Field {
-  id: number;
-  name: string;
-  size: number;
-  soil_type: string;
-  crops: string[];
-  status: "actief" | "inactief";
-  last_crop: string;
-  next_action: string;
-  address: string;
-  lat: number;
-  lng: number;
-  user_id: number;
-}
+import type { Field } from "../../api/fields";
 
 interface WeatherData {
   temp: number;
