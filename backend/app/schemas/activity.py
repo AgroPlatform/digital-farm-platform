@@ -23,3 +23,4 @@ class ActivityLog(ActivityLogBase):
 class FieldCropCreate(BaseModel):
     crop_id: int
     planting_date: Optional[date] = None
+    area: float  # Area in hectares allocated to this crop in this field

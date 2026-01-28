@@ -30,6 +30,49 @@ export interface FieldCreate {
 
 export interface FieldUpdate extends FieldCreate {}
 
+export interface FieldCropCreate {
+  crop_id: number;
+  planting_date?: string; // date string in YYYY-MM-DD format
+  area: number; // in hectares (required)
+}
+
+export interface FieldCropDetail {
+  id: number;
+  name: string;
+  type: string;
+  season: string;
+  duration: string;
+  water_needs: string;
+  expected_yield: string;
+  status: string;
+  icon: string;
+  description?: string;
+  soil_temp?: string;
+  soil_type?: string;
+  sunlight?: string;
+  tips?: string;
+  planting_date?: string;
+  area?: number;
+}
+
+export interface ActivityLogCreate {
+  crop_id: number;
+  activity_type: string;
+  date: string; // ISO string
+  area: number;
+  notes?: string;
+}
+
+export interface ActivityLog {
+  id: number;
+  field_id: number;
+  crop_id: number;
+  activity_type: string;
+  date: string;
+  area: number;
+  notes?: string;
+}
+
 export async function getFields(): Promise<Field[]> {
   const res = await client.get("/fields/");
   if (!res.ok) {
@@ -74,10 +117,60 @@ export async function deleteField(id: number): Promise<void> {
   }
 }
 
+// Crop management for fields
+export async function addCropToField(fieldId: number, data: FieldCropCreate): Promise<Field> {
+  const res = await client.post(`/fields/${fieldId}/crops`, data);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Kon gewas niet toevoegen`);
+  }
+  return res.json();
+}
+
+export async function removeCropFromField(fieldId: number, cropId: number): Promise<void> {
+  const res = await client.delete(`/fields/${fieldId}/crops/${cropId}`);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Kon gewas niet verwijderen`);
+  }
+}
+
+export async function getFieldCrops(fieldId: number): Promise<FieldCropDetail[]> {
+  const res = await client.get(`/fields/${fieldId}/crops`);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Failed to get field crops (${res.status})`);
+  }
+  return res.json();
+}
+
+// Activity management for fields
+export async function createActivityForField(fieldId: number, data: ActivityLogCreate): Promise<ActivityLog> {
+  const res = await client.post(`/fields/${fieldId}/activities`, data);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Failed to create activity (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function getFieldActivities(fieldId: number): Promise<ActivityLog[]> {
+  const res = await client.get(`/fields/${fieldId}/activities`);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Failed to get field activities (${res.status})`);
+  }
+  return res.json();
+}
+
 export default {
   getFields,
   getField,
   createField,
   updateField,
   deleteField,
+  addCropToField,
+  getFieldCrops,
+  createActivityForField,
+  getFieldActivities,
 };

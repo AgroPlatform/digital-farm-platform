@@ -7,7 +7,8 @@ field_crop_association = Table(
     'field_crop_association', Base.metadata,
     Column('field_id', Integer, ForeignKey('fields.id'), primary_key=True),
     Column('crop_id', Integer, ForeignKey('crops.id'), primary_key=True),
-    Column('planting_date', Date, nullable=True) # Optional: track when this crop was planted in this field
+    Column('planting_date', Date, nullable=True), # Optional: track when this crop was planted in this field
+    Column('area', Float, nullable=True)  # Area in hectares allocated to this crop in this field
 )
 
 class ActivityLog(Base):
