@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { login as apiLogin, register as apiRegister } from './api/auth';
-import client from './api/client';
+import client, { setUnauthorizedHandler } from './api/client';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Weather from './components/pages/Weather';
@@ -9,6 +9,7 @@ import SmartPlanner from './components/pages/SmartPlanner';
 import Crops from './components/pages/Crops';
 import Fields from './components/pages/Fields';
 import Settings from './components/pages/Settings';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
@@ -30,6 +31,13 @@ function App() {
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [isLogin, setIsLogin] = useState(true);
+
+  const clearAuthState = useCallback(() => {
+    setIsAuthenticated(false);
+    setUser(null);
+    // Remove any leftover client cookie just in case (server should clear it).
+    document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  }, []);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,11 +108,34 @@ function App() {
     }
 
     // Always clear client-side auth state.
-    setIsAuthenticated(false);
-    setUser(null);
-    // Remove any leftover client cookie just in case (server should clear it).
-    document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    clearAuthState();
   };
+
+  useEffect(() => {
+    let handlingUnauthorized = false;
+
+    const handleUnauthorized = async () => {
+      if (handlingUnauthorized) {
+        return;
+      }
+
+      handlingUnauthorized = true;
+      try {
+        await client.post('/auth/logout', {});
+      } catch (err) {
+        console.error('Unauthorized logout request error', err);
+      } finally {
+        clearAuthState();
+        handlingUnauthorized = false;
+      }
+    };
+
+    setUnauthorizedHandler(handleUnauthorized);
+
+    return () => {
+      setUnauthorizedHandler(null);
+    };
+  }, [clearAuthState]);
 
   // On app load, validate server-side session (httpOnly cookie) and restore user state if valid.
   useEffect(() => {
@@ -123,21 +154,14 @@ function App() {
 
         // If token invalid/expired, request server to clear cookie and clear client state
         if (res.status === 401) {
-          try {
-            await client.post('/auth/logout', {});
-          } catch (e) {
-            // ignore
-          }
+          return;
         }
       } catch (err) {
         console.error('Auth check failed', err);
       }
 
       if (!mounted) return;
-      setIsAuthenticated(false);
-      setUser(null);
-      // Client-side attempt to remove cookie (will not affect httpOnly cookie on most browsers).
-      document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      clearAuthState();
     };
 
     checkAuth();
@@ -145,29 +169,9 @@ function App() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [clearAuthState]);
 
-  // If authenticated, show dashboard with routing
-  if (isAuthenticated) {
-    return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout onLogout={handleLogout} user={user} />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="weather" element={<Weather />} />
-            <Route path="smart-planner" element={<SmartPlanner />} />
-            <Route path="crops" element={<Crops />} />
-            <Route path="fields" element={<Fields />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    );
-  }
-
-  // Otherwise show login/register page
-  return (
+  const authView = (
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
@@ -336,6 +340,37 @@ function App() {
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : authView}
+        />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Layout onLogout={handleLogout} user={user} />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="weather" element={<Weather />} />
+          <Route path="smart-planner" element={<SmartPlanner />} />
+          <Route path="crops" element={<Crops />} />
+          <Route path="fields" element={<Fields />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+        <Route
+          path="*"
+          element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />}
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
