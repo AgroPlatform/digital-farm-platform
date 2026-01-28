@@ -17,6 +17,7 @@ import './App.css';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{ email: string; full_name?: string } | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
   // Login state
   const [email, setEmail] = useState('');
@@ -144,10 +145,6 @@ function App() {
     let mounted = true;
 
     const checkAuth = async () => {
-      if (window.location.pathname === '/login') {
-        return;
-      }
-
       try {
         const res = await client.get('/user/profile');
         if (res.ok) {
@@ -158,16 +155,17 @@ function App() {
           return;
         }
 
-        // If token invalid/expired, request server to clear cookie and clear client state
-        if (res.status === 401) {
-          return;
-        }
+        if (!mounted) return;
+        clearAuthState();
       } catch (err) {
         console.error('Auth check failed', err);
+        if (!mounted) return;
+        clearAuthState();
+      } finally {
+        if (mounted) {
+          setIsCheckingAuth(false);
+        }
       }
-
-      if (!mounted) return;
-      clearAuthState();
     };
 
     checkAuth();
@@ -347,6 +345,14 @@ function App() {
       </div>
     </div>
   );
+
+  if (isCheckingAuth) {
+    return (
+      <div className="fields-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        Laden...
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>
