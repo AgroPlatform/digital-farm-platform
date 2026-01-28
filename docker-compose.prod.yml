@@ -44,14 +44,14 @@ services:
       - digital-farm-network
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  # Next.js Frontend
+  # Vite Frontend (served by nginx)
   web:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
     container_name: digital-farm-web
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      VITE_API_URL: http://localhost:8000
     ports:
       # frontend is served by nginx in the container on port 80
       - "3000:80"
