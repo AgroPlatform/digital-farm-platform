@@ -84,6 +84,7 @@ for _ in range(60):
 else:
   print(f'Database {db_name} still unreachable, exiting')
   sys.exit(1)
+PY
 
 echo "Database is up, preparing schema and creating test user"
 
