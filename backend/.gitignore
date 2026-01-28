@@ -15,5 +15,3 @@ htmlcov/
 dist/
 build/
 *.egg-info/
-alembic/versions/*.py
-!alembic/versions/.gitkeep

@@ -6,7 +6,7 @@ A modern monorepo architecture featuring a FastAPI backend, Next.js frontend, an
 
 This project is structured as a monorepo containing three main components:
 
-- **Backend**: FastAPI (Python 3.11) REST API with SQLAlchemy 2.0 and Alembic
+- **Backend**: FastAPI (Python 3.11) REST API with SQLAlchemy 2.0
 - **Frontend**: Next.js (React + TypeScript) with Tailwind CSS
 - **Database**: PostgreSQL 15
 
@@ -24,10 +24,6 @@ digital-farm-platform/
 │   │   ├── db/                # Database setup
 │   │   │   └── session.py     # SQLAlchemy session management
 │   │   └── main.py            # FastAPI application entry point
-│   ├── alembic/               # Database migrations
-│   │   ├── versions/          # Migration scripts
-│   │   └── env.py            # Alembic environment configuration
-│   ├── alembic.ini           # Alembic configuration
 │   ├── requirements.txt       # Python dependencies
 │   ├── Dockerfile            # Backend container configuration
 │   └── .env.example          # Environment variables template
@@ -112,15 +108,13 @@ digital-farm-platform/
    # Edit .env with your database credentials
    ```
 
-5. **Run database migrations**
-   ```bash
-   alembic upgrade head
-   ```
-
-6. **Start the backend server**
+5. **Start the backend server**
    ```bash
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
+
+   When `DEBUG=True`, the backend creates tables on startup using
+   `Base.metadata.create_all()` for local development.
 
 #### Frontend Setup
 
@@ -200,9 +194,9 @@ docker-compose -f docker-compose.yml up --build -d
 - Production backend listens on host port 8000 (uvicorn without --reload).
 - The production compose is configured to build using `Dockerfile.prod` files so CI/CD pipelines can build/push those images.
 
-Security and migration notes
+Security and schema notes
 - Before starting production, make sure `DEBUG` is set to `False` and production secrets are provided via environment variables or a secret manager.
-- Run database migrations as part of your deployment process (e.g., `docker-compose run --rm api alembic upgrade head`).
+- In production, manage schema changes explicitly (for example, by running a dedicated migration process) rather than relying on dev-time auto-creation.
 
 ## 🔧 Configuration
 
@@ -234,15 +228,7 @@ Security and migration notes
 ### Backend
 
 - **Run tests**: (Add your test command here)
-- **Create migration**: 
-  ```bash
-  cd backend
-  alembic revision --autogenerate -m "description"
-  ```
-- **Apply migrations**: 
-  ```bash
-  alembic upgrade head
-  ```
+- **Schema creation (dev)**: when `DEBUG=True`, tables are created automatically at startup with SQLAlchemy `create_all()`.
 
 ### Frontend
 
