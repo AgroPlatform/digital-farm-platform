@@ -112,23 +112,10 @@ except Exception as e:
 
 PY
 
-echo "Database is up, running migrations (if any) and creating test user"
-
-if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
-  if [ -d "alembic" ]; then
-    if command -v alembic >/dev/null 2>&1; then
-      echo "RUN_MIGRATIONS is true: running alembic upgrade head"
-      alembic upgrade head || true
-    else
-      echo "alembic not installed in container, skipping migrations"
-    fi
-  fi
-else
-  echo "RUN_MIGRATIONS is false — skipping alembic migrations"
-fi
+echo "Database is up, preparing schema and creating test user"
 
 # Dev-only automatic table creation for ephemeral DBs. Set DEV_DB_CREATE=false
-# to disable this in environments where you prefer to use Alembic migrations.
+# to disable this in environments where you prefer to manage schema separately.
 if [ "${DEV_DB_CREATE:-true}" = "true" ]; then
   python - <<'PY'
 try:
