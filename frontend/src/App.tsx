@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
 import { login as apiLogin, register as apiRegister } from './api/auth';
 import client, { setUnauthorizedHandler } from './api/client';
 import Layout from './components/Layout';
@@ -10,6 +11,7 @@ import Crops from './components/pages/Crops';
 import Fields from './components/pages/Fields';
 import Settings from './components/pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
 function App() {
@@ -51,7 +53,7 @@ function App() {
       setPassword('');
     } catch (err: any) {
       console.error('Login failed', err);
-      alert(err?.message || 'Login mislukt');
+      toast.error(err?.message || 'Login mislukt');
     }
   };
 
@@ -60,12 +62,12 @@ function App() {
     setRegisterError(null);
     
     if (registerPassword !== confirmPassword) {
-      alert('Wachtwoorden komen niet overeen');
+      toast.warning('Wachtwoorden komen niet overeen');
       return;
     }
     
     if (!acceptTerms) {
-      alert('U moet akkoord gaan met de algemene voorwaarden');
+      toast.warning('U moet akkoord gaan met de algemene voorwaarden');
       return;
     }
     
@@ -74,7 +76,7 @@ function App() {
     try {
       const result = await apiRegister(registerEmail, registerPassword, fullName);
       console.log('Registration successful:', result);
-      alert(`Registratie succesvol! U kunt nu inloggen met ${result.email}`);
+      toast.success(`Registratie succesvol! U kunt nu inloggen met ${result.email}`);
       // Reset form
       setRegisterEmail('');
       setRegisterPassword('');
@@ -87,7 +89,7 @@ function App() {
     } catch (err: any) {
       console.error('Registration failed', err);
       setRegisterError(err?.message || 'Registratie mislukt');
-      alert(err?.message || 'Registratie mislukt');
+      toast.error(err?.message || 'Registratie mislukt');
     } finally {
       setRegisterLoading(false);
     }
@@ -370,6 +372,7 @@ function App() {
           element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />}
         />
       </Routes>
+      <ToastContainer position="top-right" autoClose={4000} theme="colored" />
     </BrowserRouter>
   );
 }
