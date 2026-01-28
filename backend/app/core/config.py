@@ -36,6 +36,14 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-me-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     SECURE_COOKIE: bool = False
+    COOKIE_SAMESITE: str = "lax"
+
+    @field_validator("COOKIE_SAMESITE")
+    def _normalize_cookie_samesite(cls, v: str) -> str:
+        normalized = v.strip().lower()
+        if normalized not in {"lax", "strict", "none"}:
+            raise ValueError("COOKIE_SAMESITE must be one of: lax, strict, none")
+        return normalized
 
     @field_validator("CORS_ORIGINS", mode="before")
     def _parse_cors_origins(cls, v: Any) -> List[str]:

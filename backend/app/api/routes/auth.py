@@ -79,14 +79,16 @@ def login(request: LoginRequest, response: Response, db: Session = Depends(get_d
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     token = jwt_util.create_access_token(user.id)
+    same_site = settings.COOKIE_SAMESITE
+    secure_cookie = settings.SECURE_COOKIE or same_site == "none"
 
     # Set secure httpOnly cookie containing the access token. Frontend should use credentials: 'include'.
     response.set_cookie(
         key="access_token",
         value=token,
         httponly=True,
-        secure=settings.SECURE_COOKIE,
-        samesite="lax",
+        secure=secure_cookie,
+        samesite=same_site,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
@@ -111,5 +113,7 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
             pass
 
     # Clear the cookie in the response so browser drops it
-    response.delete_cookie("access_token")
+    same_site = settings.COOKIE_SAMESITE
+    secure_cookie = settings.SECURE_COOKIE or same_site == "none"
+    response.delete_cookie("access_token", samesite=same_site, secure=secure_cookie)
     return {"message": "Logged out"}
