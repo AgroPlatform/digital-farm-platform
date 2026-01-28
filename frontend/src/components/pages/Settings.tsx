@@ -5,12 +5,6 @@ import * as userApi from '../../api/user';
 const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('account');
   const [profile, setProfile] = useState<userApi.UserProfile | null>(null);
-  const [notifications, setNotifications] = useState<userApi.NotificationPreferences>({
-    email_project_updates: true,
-    email_team_messages: true,
-    email_system_updates: false,
-    push_browser_notifications: true,
-  });
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,10 +17,9 @@ const Settings: React.FC = () => {
     confirm_password: '',
   });
 
-  // Load user profile and notifications on mount
+  // Load user profile on mount
   useEffect(() => {
     loadProfile();
-    loadNotifications();
   }, []);
 
   const loadProfile = async () => {
@@ -35,15 +28,6 @@ const Settings: React.FC = () => {
       setProfile(data);
     } catch (err) {
       console.error('Failed to load profile:', err);
-    }
-  };
-
-  const loadNotifications = async () => {
-    try {
-      const data = await userApi.getNotifications();
-      setNotifications(data);
-    } catch (err) {
-      console.error('Failed to load notifications:', err);
     }
   };
 
@@ -109,19 +93,6 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleNotificationToggle = async (key: keyof userApi.NotificationPreferences) => {
-    const updated = { ...notifications, [key]: !notifications[key] };
-    setNotifications(updated);
-
-    try {
-      await userApi.updateNotifications(updated);
-    } catch (err) {
-      console.error('Failed to update notifications:', err);
-      // Revert on error
-      setNotifications(notifications);
-    }
-  };
-
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setError(null);
@@ -133,7 +104,7 @@ const Settings: React.FC = () => {
       <div className="page-header">
         <div className="header-content">
           <h1>Instellingen</h1>
-          <p>Beheer uw account en voorkeuren</p>
+          <p>Beheer uw account en beveiliging</p>
         </div>
       </div>
 
@@ -153,27 +124,6 @@ const Settings: React.FC = () => {
             >
               <span className="nav-icon">🔒</span>
               Beveiliging
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'notifications' ? 'active' : ''}`}
-              onClick={() => handleTabChange('notifications')}
-            >
-              <span className="nav-icon">🔔</span>
-              Notificaties
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'preferences' ? 'active' : ''}`}
-              onClick={() => handleTabChange('preferences')}
-            >
-              <span className="nav-icon">⚙️</span>
-              Voorkeuren
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'billing' ? 'active' : ''}`}
-              onClick={() => handleTabChange('billing')}
-            >
-              <span className="nav-icon">💳</span>
-              Facturering
             </button>
           </div>
         </div>
@@ -293,159 +243,6 @@ const Settings: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'notifications' && (
-            <div className="settings-section">
-              <h2>Notificatie Voorkeuren</h2>
-              <div className="settings-card">
-                <h3>Email Notificaties</h3>
-                <div className="toggle-setting">
-                  <div>
-                    <strong>Projectupdates</strong>
-                    <p>Ontvang updates over uw projecten</p>
-                  </div>
-                  <label className="toggle">
-                    <input 
-                      type="checkbox" 
-                      checked={notifications.email_project_updates}
-                      onChange={() => handleNotificationToggle('email_project_updates')}
-                    />
-                    <span className="slider"></span>
-                  </label>
-                </div>
-                <div className="toggle-setting">
-                  <div>
-                    <strong>Teamberichten</strong>
-                    <p>Berichten van teamleden</p>
-                  </div>
-                  <label className="toggle">
-                    <input 
-                      type="checkbox" 
-                      checked={notifications.email_team_messages}
-                      onChange={() => handleNotificationToggle('email_team_messages')}
-                    />
-                    <span className="slider"></span>
-                  </label>
-                </div>
-                <div className="toggle-setting">
-                  <div>
-                    <strong>Systeemupdates</strong>
-                    <p>Belangrijke systeemwijzigingen</p>
-                  </div>
-                  <label className="toggle">
-                    <input 
-                      type="checkbox" 
-                      checked={notifications.email_system_updates}
-                      onChange={() => handleNotificationToggle('email_system_updates')}
-                    />
-                    <span className="slider"></span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="settings-card">
-                <h3>Push Notificaties</h3>
-                <div className="toggle-setting">
-                  <span>Browser Notificaties</span>
-                  <label className="toggle">
-                    <input 
-                      type="checkbox" 
-                      checked={notifications.push_browser_notifications}
-                      onChange={() => handleNotificationToggle('push_browser_notifications')}
-                    />
-                    <span className="slider"></span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'preferences' && (
-            <div className="settings-section">
-              <h2>Voorkeuren</h2>
-              <div className="settings-card">
-                <h3>Taal & Regio</h3>
-                <div className="form-group">
-                  <label>Taal</label>
-                  <select>
-                    <option>Nederlands</option>
-                    <option>English</option>
-                    <option>Deutsch</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Tijdzone</label>
-                  <select>
-                    <option>Amsterdam (UTC+1)</option>
-                    <option>London (UTC+0)</option>
-                    <option>New York (UTC-5)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="settings-card">
-                <h3>Weergave</h3>
-                <div className="toggle-setting">
-                  <span>Donkere Modus</span>
-                  <label className="toggle">
-                    <input type="checkbox" />
-                    <span className="slider"></span>
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label>Theme Kleur</label>
-                  <div className="color-options">
-                    <button className="color-option active" style={{ background: '#4CAF50' }}></button>
-                    <button className="color-option" style={{ background: '#2196F3' }}></button>
-                    <button className="color-option" style={{ background: '#9C27B0' }}></button>
-                    <button className="color-option" style={{ background: '#FF9800' }}></button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'billing' && (
-            <div className="settings-section">
-              <h2>Facturering & Abonnement</h2>
-              <div className="settings-card">
-                <div className="plan-info">
-                  <h3>Huidig Plan: <span className="plan-badge">Professional</span></h3>
-                  <p>€49/maand • Verlengt op 15 Februari 2026</p>
-                </div>
-                <button className="upgrade-plan-btn">⬆ Upgrade Plan</button>
-              </div>
-
-              <div className="settings-card">
-                <h3>Betaalmethode</h3>
-                <div className="payment-method">
-                  <div className="card-info">
-                    <span className="card-icon">💳</span>
-                    <div>
-                      <strong>Visa •••• 4242</strong>
-                      <p>Verloopt 12/2027</p>
-                    </div>
-                  </div>
-                  <button className="edit-btn">Bewerken</button>
-                </div>
-              </div>
-
-              <div className="settings-card">
-                <h3>Factuur Geschiedenis</h3>
-                <div className="invoice-list">
-                  <div className="invoice-item">
-                    <div>
-                      <strong>Januari 2026</strong>
-                      <p>Betaald op 15 Jan 2026</p>
-                    </div>
-                    <div className="invoice-actions">
-                      <span className="invoice-amount">€49.00</span>
-                      <button className="download-btn">⬇️ Download</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

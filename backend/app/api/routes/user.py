@@ -16,7 +16,6 @@ class UserProfileResponse(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
     job_title: Optional[str] = None
-    notification_preferences: Optional[dict] = None
 
     class Config:
         from_attributes = True
@@ -31,13 +30,6 @@ class UpdateProfileRequest(BaseModel):
 class UpdatePasswordRequest(BaseModel):
     current_password: str
     new_password: str
-
-
-class UpdateNotificationsRequest(BaseModel):
-    email_project_updates: bool = True
-    email_team_messages: bool = True
-    email_system_updates: bool = False
-    push_browser_notifications: bool = True
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> user_model.User:
@@ -127,23 +119,4 @@ def update_password(
     return {"message": "Password updated successfully"}
 
 
-@router.get("/notifications", response_model=UpdateNotificationsRequest)
-def get_notifications(current_user: user_model.User = Depends(get_current_user)):
-    """Get user notification preferences."""
-    if current_user.notification_preferences:
-        return UpdateNotificationsRequest(**current_user.notification_preferences)
-    # Return defaults
-    return UpdateNotificationsRequest()
 
-
-@router.put("/notifications", response_model=UpdateNotificationsRequest)
-def update_notifications(
-    request: UpdateNotificationsRequest,
-    db: Session = Depends(get_db),
-    current_user: user_model.User = Depends(get_current_user)
-):
-    """Update user notification preferences."""
-    current_user.notification_preferences = request.model_dump()
-    db.commit()
-    
-    return request

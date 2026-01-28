@@ -89,10 +89,6 @@ const Layout: React.FC<LayoutProps> = ({ onLogout, user }) => {
         </div>
         
         <div className="navbar-actions">
-          <button className="nav-icon" aria-label="Notifications">
-            🔔
-            <span className="notification-badge">3</span>
-          </button>
           <div className="user-profile" onClick={onLogout} style={{ cursor: 'pointer' }} title="Uitloggen">
             <div className="avatar">{getInitials()}</div>
             <div className="user-info">

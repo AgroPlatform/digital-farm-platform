@@ -144,6 +144,10 @@ function App() {
     let mounted = true;
 
     const checkAuth = async () => {
+      if (window.location.pathname === '/login') {
+        return;
+      }
+
       try {
         const res = await client.get('/user/profile');
         if (res.ok) {
