@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import './Fields.css';
 import * as fieldsApi from '../../api/fields';
 import 'leaflet/dist/leaflet.css';
@@ -156,7 +157,7 @@ const Fields: React.FC = () => {
       });
       await loadFields();
     } catch (err: any) {
-      alert(`Failed to update field status: ${err.message}`);
+      toast.error(`Failed to update field status: ${err.message}`);
     }
   };
 
@@ -190,7 +191,7 @@ const Fields: React.FC = () => {
   const saveEditedField = async () => {
     if (!editingField) return;
     if (!newField.name.trim() || !newField.size.trim()) {
-      alert('Vul alstublieft de naam en grootte van het veld in');
+      toast.warning('Vul alstublieft de naam en grootte van het veld in');
       return;
     }
     try {
@@ -219,8 +220,9 @@ const Fields: React.FC = () => {
         address: '',
       });
       setShowAddForm(false);
+      toast.success('Veld bijgewerkt.');
     } catch (err: any) {
-      alert(`Failed to update field: ${err.message}`);
+      toast.error(`Failed to update field: ${err.message}`);
     }
   };
 
@@ -233,13 +235,13 @@ const Fields: React.FC = () => {
         setSelectedField(null);
       }
     } catch (err: any) {
-      alert(`Failed to delete field: ${err.message}`);
+      toast.error(`Failed to delete field: ${err.message}`);
     }
   };
 
   const addFieldWithForm = async () => {
     if (!newField.name.trim() || !newField.size.trim()) {
-      alert('Vul alstublieft de naam en grootte van het veld in');
+      toast.warning('Vul alstublieft de naam en grootte van het veld in');
       return;
     }
     try {
@@ -267,8 +269,9 @@ const Fields: React.FC = () => {
         nextAction: '',
         address: '',
       });
+      toast.success('Veld toegevoegd.');
     } catch (err: any) {
-      alert(`Failed to create field: ${err.message}`);
+      toast.error(`Failed to create field: ${err.message}`);
     }
   };
 
