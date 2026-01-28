@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import './SmartPlanner.css';
 
 const SmartPlanner: React.FC = () => {
@@ -106,17 +107,17 @@ const SmartPlanner: React.FC = () => {
   const selectedRecData = recommendations.find(rec => rec.id === selectedRec);
 
   const applyRecommendation = (id: number) => {
-    alert(`Aanbeveling ${id} wordt toegepast en gepland`);
+    toast.success(`Aanbeveling ${id} wordt toegepast en gepland`);
     // In een echte app zou hier API call komen
   };
 
   const scheduleRecommendation = (id: number) => {
-    alert(`Aanbeveling ${id} wordt ingepland voor later`);
+    toast.info(`Aanbeveling ${id} wordt ingepland voor later`);
     // In een echte app zou hier planning functionaliteit komen
   };
 
   const generateNewRecommendations = () => {
-    alert('Nieuwe AI-aanbevelingen worden gegenereerd...');
+    toast.info('Nieuwe AI-aanbevelingen worden gegenereerd...');
     // In een echte app zou hier AI call komen
   };
 

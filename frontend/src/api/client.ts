@@ -1,5 +1,21 @@
 const API_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
 
+type UnauthorizedHandler = () => void;
+
+let unauthorizedHandler: UnauthorizedHandler | null = null;
+
+export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
+  unauthorizedHandler = handler;
+}
+
+async function handleResponse(res: Response) {
+  if (res.status === 401 && unauthorizedHandler) {
+    unauthorizedHandler();
+  }
+
+  return res;
+}
+
 export async function get(path: string, options: RequestInit = {}) {
   const res = await fetch(`${API_URL}${path}`, {
     method: "GET",
@@ -7,7 +23,7 @@ export async function get(path: string, options: RequestInit = {}) {
     credentials: "include", // important to send/receive httpOnly cookies
     ...options,
   });
-  return res;
+  return handleResponse(res);
 }
 
 export async function post(path: string, body: any, options: RequestInit = {}) {
@@ -18,7 +34,7 @@ export async function post(path: string, body: any, options: RequestInit = {}) {
     body: JSON.stringify(body),
     ...options,
   });
-  return res;
+  return handleResponse(res);
 }
 
 export async function put(path: string, body: any, options: RequestInit = {}) {
@@ -29,7 +45,7 @@ export async function put(path: string, body: any, options: RequestInit = {}) {
     body: JSON.stringify(body),
     ...options,
   });
-  return res;
+  return handleResponse(res);
 }
 
 export async function del(path: string, options: RequestInit = {}) {
@@ -39,7 +55,7 @@ export async function del(path: string, options: RequestInit = {}) {
     credentials: "include",
     ...options,
   });
-  return res;
+  return handleResponse(res);
 }
 
 export default {

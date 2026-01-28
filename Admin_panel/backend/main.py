@@ -61,7 +61,8 @@ app = FastAPI(title="Admin Panel (Separate)")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # Limit to known dev origins instead of wildcard when credentials are used
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
