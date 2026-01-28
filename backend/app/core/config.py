@@ -24,8 +24,13 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # CORS
-    # include common Vite/React dev ports
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    # include common Vite/React dev ports and deployed frontends
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://digital-farm-platform.vercel.app",
+        "https://digital-farm-platform-eiyg.vercel.app",
+    ]
 
     # Security / Auth
     SECRET_KEY: str = "change-me-in-production"
