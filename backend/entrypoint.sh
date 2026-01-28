@@ -122,6 +122,10 @@ TEST_FULL=${TEST_USER_FULLNAME:-"Test User"}
 echo "Ensuring test user exists: $TEST_EMAIL"
 python -m app.scripts.create_user --email "$TEST_EMAIL" --password "$TEST_PASSWORD" --full-name "$TEST_FULL" || true
 
+# Seed the database with initial crop data
+echo "Seeding database with initial data..."
+python -m app.scripts.seed_crops || true
+
 echo "Entrypoint finished, launching command: $@"
 
 exec "$@"

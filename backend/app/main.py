@@ -9,6 +9,7 @@ from app.api.routes import auth as auth_router
 from app.api.routes import user as user_router
 from app.api.routes import weather as weather_router
 from app.api.routes import fields as fields_router
+from app.api.routes import crops as crops_router
 import app.models  # noqa: F401
 
 app = FastAPI(
@@ -18,6 +19,7 @@ app = FastAPI(
 )
 
 # Configure CORS
+
 # Use configured CORS origins (do NOT use wildcard when allow_credentials=True)
 origins = settings.CORS_ORIGINS or []
 app.add_middleware(
@@ -34,7 +36,8 @@ app.include_router(fields.router, tags=["Fields"])
 app.include_router(auth_router.router)
 app.include_router(user_router.router)
 app.include_router(fields_router.router)
-app.include_router(weather_router.router, tags=["Weather"])
+app.include_router(weather_router.router)
+app.include_router(crops_router.router, prefix="/crops", tags=["Crops"])
 
 
 @app.on_event("startup")

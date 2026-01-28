@@ -6,14 +6,6 @@ export interface UserProfile {
   full_name?: string;
   phone?: string;
   job_title?: string;
-  notification_preferences?: NotificationPreferences;
-}
-
-export interface NotificationPreferences {
-  email_project_updates: boolean;
-  email_team_messages: boolean;
-  email_system_updates: boolean;
-  push_browser_notifications: boolean;
 }
 
 export interface UpdateProfileRequest {
@@ -54,28 +46,8 @@ export async function updatePassword(data: UpdatePasswordRequest): Promise<{ mes
   return res.json();
 }
 
-export async function getNotifications(): Promise<NotificationPreferences> {
-  const res = await client.get("/user/notifications");
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(txt || `Failed to get notifications (${res.status})`);
-  }
-  return res.json();
-}
-
-export async function updateNotifications(data: NotificationPreferences): Promise<NotificationPreferences> {
-  const res = await client.put("/user/notifications", data);
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(txt || `Failed to update notifications (${res.status})`);
-  }
-  return res.json();
-}
-
 export default {
   getProfile,
   updateProfile,
   updatePassword,
-  getNotifications,
-  updateNotifications,
 };

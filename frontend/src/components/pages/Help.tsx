@@ -7,7 +7,6 @@ const Help: React.FC = () => {
     { q: 'Hoe voeg ik teamleden toe?', a: 'Navigeer naar de Team pagina en klik op "Voeg Lid Toe" om nieuwe teamleden uit te nodigen.' },
     { q: 'Waar kan ik mijn wachtwoord wijzigen?', a: 'Ga naar Instellingen > Beveiliging om uw wachtwoord te wijzigen.' },
     { q: 'Hoe upload ik documenten?', a: 'Klik op de Documenten pagina en gebruik de "Upload" knop om bestanden toe te voegen.' },
-    { q: 'Kan ik notificaties uitschakelen?', a: 'Ja, ga naar Instellingen > Notificaties om uw voorkeuren aan te passen.' },
   ];
 
   return (
