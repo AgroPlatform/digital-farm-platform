@@ -8,7 +8,12 @@ from sqlalchemy.orm import Session
 from app.api.routes.user import get_current_user
 from app.db.session import get_db
 from app.models.field import Field
+from app.models.crop import Crop
 from app.models.user import User
+from app.models.activity import ActivityLog
+from app.schemas.activity import ActivityLogCreate, ActivityLog as ActivityLogSchema, FieldCropCreate
+from app.schemas.crop import Crop as CropSchema
+
 
 router = APIRouter(prefix="/fields", tags=["Fields"])
 
@@ -147,5 +152,80 @@ def delete_field(
     db.delete(db_field)
     db.commit()
     return None
+
+
+# Endpoints for managing crops in fields
+@router.post("/{field_id}/crops", response_model=FieldResponse)
+def add_crop_to_field(
+    field_id: int,
+    field_crop: FieldCropCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_field = db.query(Field).filter(Field.id == field_id, Field.user_id == current_user.id).first()
+    if not db_field:
+        raise HTTPException(status_code=404, detail="Field not found")
+        
+    db_crop = db.query(Crop).filter(Crop.id == field_crop.crop_id).first()
+    if not db_crop:
+        raise HTTPException(status_code=404, detail="Crop not found")
+
+    if db_crop not in db_field.crops:
+        db_field.crops.append(db_crop)
+        db.commit()
+
+    return db_field
+
+@router.get("/{field_id}/crops", response_model=List[CropSchema])
+def get_field_crops(
+    field_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_field = db.query(Field).filter(Field.id == field_id, Field.user_id == current_user.id).first()
+    if not db_field:
+        raise HTTPException(status_code=404, detail="Field not found")
+    return db_field.crops
+
+
+# Endpoints for managing activities
+@router.post("/{field_id}/activities", response_model=ActivityLogSchema)
+def create_activity_for_field(
+    field_id: int,
+    activity_in: ActivityLogCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_field = db.query(Field).filter(Field.id == field_id, Field.user_id == current_user.id).first()
+    if not db_field:
+        raise HTTPException(status_code=404, detail="Field not found")
+    
+    db_crop = db.query(Crop).filter(Crop.id == activity_in.crop_id).first()
+    if not db_crop:
+        raise HTTPException(status_code=404, detail="Crop not found")
+
+    if db_crop not in db_field.crops:
+        raise HTTPException(status_code=400, detail="Crop not assigned to this field")
+
+    activity = ActivityLog(
+        **activity_in.dict(),
+        field_id=field_id
+    )
+    db.add(activity)
+    db.commit()
+    db.refresh(activity)
+    return activity
+
+@router.get("/{field_id}/activities", response_model=List[ActivityLogSchema])
+def get_activities_for_field(
+    field_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_field = db.query(Field).filter(Field.id == field_id, Field.user_id == current_user.id).first()
+    if not db_field:
+        raise HTTPException(status_code=404, detail="Field not found")
+    
+    return db.query(ActivityLog).filter(ActivityLog.field_id == field_id).all()
 
 
