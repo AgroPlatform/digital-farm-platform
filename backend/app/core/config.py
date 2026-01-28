@@ -1,12 +1,22 @@
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
+from pydantic import field_validator, Field, AliasChoices
 from typing import List, Any
 import json
 
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/digital_farm"
+    DATABASE_URL: str = Field(
+        default="postgresql://postgres:postgres@localhost:5432/digital_farm",
+        validation_alias=AliasChoices(
+            "DATABASE_URL",
+            "POSTGRES_URL",
+            "POSTGRES_PRISMA_URL",
+            "DATABASE_URL_UNPOOLED",
+            "POSTGRES_URL_NON_POOLING",
+            "POSTGRES_URL_NO_SSL",
+        ),
+    )
     
     # API
     API_HOST: str = "0.0.0.0"
