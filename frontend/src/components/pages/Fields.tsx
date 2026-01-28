@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import './Fields.css';
 import * as fieldsApi from '../../api/fields';
+import * as cropsApi from '../../api/crops';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -91,6 +92,18 @@ const Fields: React.FC = () => {
   });
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const [showAddCropPopup, setShowAddCropPopup] = useState(false);
+  const [availableCrops, setAvailableCrops] = useState<any[]>([]);
+  const [selectedCropId, setSelectedCropId] = useState<number | null>(null);
+  const [plantingDate, setPlantingDate] = useState('');
+  const [cropArea, setCropArea] = useState('');
+  const [fieldCrops, setFieldCrops] = useState<fieldsApi.FieldCropDetail[]>([]);
+  const [showAddActivityPopup, setShowAddActivityPopup] = useState(false);
+  const [activityType, setActivityType] = useState('');
+  const [activityDate, setActivityDate] = useState('');
+  const [activityArea, setActivityArea] = useState('');
+  const [activityNotes, setActivityNotes] = useState('');
+  const [selectedActivityCropId, setSelectedActivityCropId] = useState<number | null>(null);
 
   const soilTypes = [
     { type: 'Klei', color: '#8B4513', description: 'Zware grond, goed water vasthoudend' },
@@ -110,6 +123,38 @@ const Fields: React.FC = () => {
       });
     }
   }, []);
+
+  // Load available crops when add crop popup is shown
+  useEffect(() => {
+    if (showAddCropPopup) {
+      const loadAvailableCrops = async () => {
+        try {
+          const crops = await cropsApi.getCrops();
+          setAvailableCrops(crops);
+        } catch (err) {
+          toast.error('Failed to load crops');
+        }
+      };
+      loadAvailableCrops();
+    }
+  }, [showAddCropPopup]);
+
+  // Load field crops when a field is selected
+  useEffect(() => {
+    if (selectedField) {
+      const loadFieldCrops = async () => {
+        try {
+          const crops = await fieldsApi.getFieldCrops(selectedField);
+          setFieldCrops(crops);
+        } catch (err) {
+          toast.error('Failed to load field crops');
+        }
+      };
+      loadFieldCrops();
+    } else {
+      setFieldCrops([]);
+    }
+  }, [selectedField]);
 
   const loadFields = async () => {
     try {
@@ -339,6 +384,103 @@ const Fields: React.FC = () => {
     setAddressSuggestions([]);
   };
 
+  // Function to add crop to field
+  const handleAddCrop = async () => {
+    if (!selectedField) {
+      toast.error('Selecteer een veld');
+      return;
+    }
+    if (!selectedCropId) {
+      toast.error('Selecteer een gewas');
+      return;
+    }
+    const area = parseFloat(cropArea);
+    if (!cropArea || isNaN(area) || area <= 0) {
+      toast.error('Voer een geldig areaal in');
+      return;
+    }
+
+    try {
+      await fieldsApi.addCropToField(selectedField, {
+        crop_id: selectedCropId,
+        planting_date: plantingDate || undefined,
+        area: area,
+      });
+      toast.success('Gewas toegevoegd aan veld');
+      setShowAddCropPopup(false);
+      setSelectedCropId(null);
+      setPlantingDate('');
+      setCropArea('');
+      // Reload field crops
+      const crops = await fieldsApi.getFieldCrops(selectedField);
+      setFieldCrops(crops);
+      // Reload fields to update statistics
+      await loadFields();
+    } catch (err: any) {
+      toast.error(`Failed to add crop: ${err.message}`);
+    }
+  };
+
+  // Function to add activity to field
+  const handleAddActivity = async () => {
+    if (!selectedField) {
+      toast.error('Selecteer een veld');
+      return;
+    }
+    if (!selectedActivityCropId) {
+      toast.error('Selecteer een gewas');
+      return;
+    }
+    if (!activityType.trim()) {
+      toast.error('Voer een activiteit in');
+      return;
+    }
+    if (!activityDate) {
+      toast.error('Selecteer een datum');
+      return;
+    }
+    if (!activityArea || parseFloat(activityArea) <= 0) {
+      toast.error('Voer een geldig areaal in');
+      return;
+    }
+
+    try {
+      await fieldsApi.createActivityForField(selectedField, {
+        crop_id: selectedActivityCropId,
+        activity_type: activityType,
+        date: new Date(activityDate).toISOString(),
+        area: parseFloat(activityArea),
+        notes: activityNotes || undefined,
+      });
+      toast.success('Activiteit toegevoegd');
+      setShowAddActivityPopup(false);
+      setActivityType('');
+      setActivityDate('');
+      setActivityArea('');
+      setActivityNotes('');
+      setSelectedActivityCropId(null);
+    } catch (err: any) {
+      toast.error(`Failed to add activity: ${err.message}`);
+    }
+  };
+
+  // Function to remove crop from field
+  const handleRemoveCrop = async (cropId: number) => {
+    if (!selectedField) return;
+    if (!window.confirm('Weet u zeker dat u dit gewas wilt verwijderen?')) return;
+    try {
+      await fieldsApi.removeCropFromField(selectedField, cropId);
+      toast.success('Gewas verwijderd van veld');
+      // Reload field crops
+      const crops = await fieldsApi.getFieldCrops(selectedField);
+      setFieldCrops(crops);
+      // Reload fields to update statistics
+      await loadFields();
+    } catch (err: any) {
+      toast.error('Kon gewas niet verwijderen');
+    }
+  };
+
   if (loading) return <div className="fields-page">Loading fields...</div>;
   if (error) return <div className="fields-page">Error: {error}</div>;
 
@@ -499,6 +641,31 @@ const Fields: React.FC = () => {
                       <span className="info-desc">📅 Planning</span>
                     </div>
                   </div>
+                  <div className="field-crops-section">
+                    <h4>🌱 Gewassen</h4>
+                    {fieldCrops.length > 0 ? (
+                      <div className="current-crops">
+                        {fieldCrops.map((crop) => (
+                          <div key={crop.id} className="crop-item">
+                            <div className="crop-icon">{crop.icon || '🌱'}</div>
+                            <div className="crop-details">
+                              <strong>{crop.name}</strong>
+                              <span>{crop.area ? `Areaal: ${crop.area} ha` : 'Geen areaal'}</span>
+                              {crop.planting_date && <span>Geplant op: {new Date(crop.planting_date).toLocaleDateString('nl-BE')}</span>}
+                            </div>
+                            <button className="crop-action" title="Verwijder gewas" onClick={() => handleRemoveCrop(crop.id)}>
+                              🗑️
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="no-crops-message">
+                        <p>Geen gewassen toegevoegd aan dit veld</p>
+                        <button className="add-crop-btn" onClick={() => setShowAddCropPopup(true)}>➕ Gewas toevoegen</button>
+                      </div>
+                    )}
+                  </div>
                   <div className="field-detail-actions">
                     <button className="edit-btn" onClick={() => editField(selectedFieldData.id)}>
                       ✏️ Bewerken
@@ -511,6 +678,9 @@ const Fields: React.FC = () => {
                       onClick={() => toggleFieldStatus(selectedFieldData.id)}
                     >
                       {selectedFieldData.status === 'actief' ? '⏸️ Deactiveren' : '✅ Activeren'}
+                    </button>
+                    <button className="primary-button" onClick={() => setShowAddActivityPopup(true)}>
+                      ➕ Activiteit
                     </button>
                   </div>
                 </div>
@@ -656,16 +826,17 @@ const Fields: React.FC = () => {
             </div>
             <div className="field-crops-section">
               <h4>🌱 Gewassen</h4>
-              {selectedFieldData.crops.length > 0 ? (
+              {fieldCrops.length > 0 ? (
                 <div className="current-crops">
-                  {selectedFieldData.crops.map((crop, index) => (
-                    <div key={index} className="crop-item">
-                      <div className="crop-icon">🌱</div>
+                  {fieldCrops.map((crop) => (
+                    <div key={crop.id} className="crop-item">
+                      <div className="crop-icon">{crop.icon || '🌱'}</div>
                       <div className="crop-details">
-                        <strong>{crop}</strong>
-                        <span>Actief gewas</span>
+                        <strong>{crop.name}</strong>
+                        <span>{crop.area ? `Areaal: ${crop.area} ha` : 'Geen areaal'}</span>
+                        {crop.planting_date && <span>Geplant op: {new Date(crop.planting_date).toLocaleDateString('nl-BE')}</span>}
                       </div>
-                      <button className="crop-action" title="Verwijder gewas">
+                      <button className="crop-action" title="Verwijder gewas" onClick={() => handleRemoveCrop(crop.id)}>
                         🗑️
                       </button>
                     </div>
@@ -674,7 +845,7 @@ const Fields: React.FC = () => {
               ) : (
                 <div className="no-crops-message">
                   <p>Geen gewassen toegevoegd aan dit veld</p>
-                  <button className="add-crop-btn">➕ Gewas toevoegen</button>
+                  <button className="add-crop-btn" onClick={() => setShowAddCropPopup(true)}>➕ Gewas toevoegen</button>
                 </div>
               )}
             </div>
@@ -690,6 +861,9 @@ const Fields: React.FC = () => {
                 onClick={() => toggleFieldStatus(selectedFieldData.id)}
               >
                 {selectedFieldData.status === 'actief' ? '⏸️ Deactiveren' : '✅ Activeren'}
+              </button>
+              <button className="primary-button" onClick={() => setShowAddActivityPopup(true)}>
+                ➕ Activiteit
               </button>
             </div>
           </div>
@@ -901,6 +1075,140 @@ const Fields: React.FC = () => {
                 className="save-btn"
               >
                 {editingField ? 'Opslaan' : 'Toevoegen'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Crop Popup */}
+      {showAddCropPopup && (
+        <div className="modal-overlay" onClick={() => setShowAddCropPopup(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🌱 Gewas toevoegen</h3>
+              <button onClick={() => setShowAddCropPopup(false)} className="close-btn">✖️</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Gewas *</label>
+                <select
+                  value={selectedCropId || ''}
+                  onChange={(e) => setSelectedCropId(parseInt(e.target.value))}
+                >
+                  <option value="">Selecteer een gewas</option>
+                  {availableCrops.map(crop => (
+                    <option key={crop.id} value={crop.id}>{crop.name} ({crop.type})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Plantdatum</label>
+                <input
+                  type="date"
+                  value={plantingDate}
+                  onChange={(e) => setPlantingDate(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Areaal (ha) *</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={cropArea}
+                  onChange={(e) => setCropArea(e.target.value)}
+                  placeholder="Bijv. 2.5"
+                />
+                <p className="form-hint">
+                  Maximaal beschikbaar: {selectedFieldData ? parseFloat(selectedFieldData.size.split(' ')[0]) : 0} ha
+                </p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowAddCropPopup(false)} className="cancel-btn">Annuleren</button>
+              <button
+                onClick={handleAddCrop}
+                className="save-btn"
+                disabled={!selectedCropId || !cropArea || parseFloat(cropArea) <= 0}
+              >
+                Toevoegen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Activity Popup */}
+      {showAddActivityPopup && (
+        <div className="modal-overlay" onClick={() => setShowAddActivityPopup(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📝 Activiteit toevoegen</h3>
+              <button onClick={() => setShowAddActivityPopup(false)} className="close-btn">✖️</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Gewas *</label>
+                <select
+                  value={selectedActivityCropId || ''}
+                  onChange={(e) => setSelectedActivityCropId(parseInt(e.target.value))}
+                >
+                  <option value="">Selecteer een gewas</option>
+                  {fieldCrops.map(crop => (
+                    <option key={crop.id} value={crop.id}>{crop.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Activiteit *</label>
+                <select
+                  value={activityType}
+                  onChange={(e) => setActivityType(e.target.value)}
+                >
+                  <option value="">Selecteer een activiteit</option>
+                  <option value="Ploegen">Ploegen</option>
+                  <option value="Zaaien">Zaaien</option>
+                  <option value="Bemesten">Bemesten</option>
+                  <option value="Spuiten">Spuiten</option>
+                  <option value="Oogsten">Oogsten</option>
+                  <option value="Andere">Andere</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Datum *</label>
+                <input
+                  type="date"
+                  value={activityDate}
+                  onChange={(e) => setActivityDate(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Areaal (ha) *</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={activityArea}
+                  onChange={(e) => setActivityArea(e.target.value)}
+                  placeholder="Bijv. 2.5"
+                />
+              </div>
+              <div className="form-group">
+                <label>Opmerkingen</label>
+                <textarea
+                  value={activityNotes}
+                  onChange={(e) => setActivityNotes(e.target.value)}
+                  placeholder="Optionele opmerkingen..."
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowAddActivityPopup(false)} className="cancel-btn">Annuleren</button>
+              <button
+                onClick={handleAddActivity}
+                className="save-btn"
+                disabled={!selectedActivityCropId || !activityType || !activityDate || !activityArea || parseFloat(activityArea) <= 0}
+              >
+                Toevoegen
               </button>
             </div>
           </div>
