@@ -26,4 +26,4 @@ clean: down
 
 prune-images:
 	# Remove all unused images (be careful: this deletes images not referenced by any container)
-	docker image prune -a -f
+	docker image prune -a -f 
