@@ -127,8 +127,9 @@ def create_field(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new field."""
+    field_data = field.model_dump(exclude={"crops"})
     db_field = Field(
-        **field.model_dump(),
+        **field_data,
         user_id=current_user.id
     )
     db.add(db_field)
@@ -155,7 +156,7 @@ def update_field(
             detail="Field not found"
         )
 
-    for key, value in field_update.model_dump(exclude_unset=True).items():
+    for key, value in field_update.model_dump(exclude_unset=True, exclude={"crops"}).items():
         setattr(db_field, key, value)
 
     db.commit()
@@ -211,6 +212,16 @@ class FieldUpdate(FieldBase):
 class FieldResponse(FieldBase):
     id: int
     user_id: int
+
+    @field_validator('crops', mode='before')
+    @classmethod
+    def convert_crops_to_strings(cls, v):
+        if isinstance(v, list):
+            if v and hasattr(v[0], 'name'):
+                return [crop.name for crop in v]
+            elif v and isinstance(v[0], str):
+                return v
+        return v or []
 
     class Config:
         from_attributes = True
@@ -405,6 +416,8 @@ def add_crop_to_field(
         area=new_area
     )
     db.execute(stmt)
+    db_field.last_crop = db_crop.name
+    db.add(db_field)
     db.commit()
 
     # Refresh the field to get updated relationships

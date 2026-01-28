@@ -60,6 +60,22 @@ interface AddressSuggestion {
   lon: number;
 }
 
+const normalizeNumberInput = (value: string) => value.replace(',', '.').trim();
+
+const roundToTwoDecimals = (value: number) => Math.round(value * 100) / 100;
+
+const parseNumberInput = (value: string) => {
+  const parsed = Number.parseFloat(normalizeNumberInput(value));
+  return Number.isNaN(parsed) ? 0 : roundToTwoDecimals(parsed);
+};
+
+const parseSizeLabel = (value: string) => parseNumberInput(value.split(' ')[0]);
+
+const formatNumber = (value: number) => {
+  const rounded = roundToTwoDecimals(value);
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2).replace(/\.00$/, '');
+};
+
 const Fields: React.FC = () => {
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,6 +120,8 @@ const Fields: React.FC = () => {
   const [activityArea, setActivityArea] = useState('');
   const [activityNotes, setActivityNotes] = useState('');
   const [selectedActivityCropId, setSelectedActivityCropId] = useState<number | null>(null);
+  const [fieldActivities, setFieldActivities] = useState<fieldsApi.ActivityLog[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
 
   const soilTypes = [
     { type: 'Klei', color: '#8B4513', description: 'Zware grond, goed water vasthoudend' },
@@ -113,6 +131,12 @@ const Fields: React.FC = () => {
   ];
 
   const selectedFieldData = fields.find(field => field.id === selectedField);
+  const latestActivity = fieldActivities.length
+    ? [...fieldActivities].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+    : null;
+  const sortedActivities = fieldActivities.length
+    ? [...fieldActivities].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    : [];
 
   useEffect(() => {
     loadFields();
@@ -124,9 +148,9 @@ const Fields: React.FC = () => {
     }
   }, []);
 
-  // Load available crops when add crop popup is shown
+  // Load available crops when add crop popup or add/edit form is shown
   useEffect(() => {
-    if (showAddCropPopup) {
+    if (showAddCropPopup || showAddForm) {
       const loadAvailableCrops = async () => {
         try {
           const crops = await cropsApi.getCrops();
@@ -137,7 +161,7 @@ const Fields: React.FC = () => {
       };
       loadAvailableCrops();
     }
-  }, [showAddCropPopup]);
+  }, [showAddCropPopup, showAddForm]);
 
   // Load field crops when a field is selected
   useEffect(() => {
@@ -156,6 +180,25 @@ const Fields: React.FC = () => {
     }
   }, [selectedField]);
 
+  useEffect(() => {
+    if (selectedField) {
+      const loadFieldActivities = async () => {
+        try {
+          setActivitiesLoading(true);
+          const activities = await fieldsApi.getFieldActivities(selectedField);
+          setFieldActivities(activities);
+        } catch (err) {
+          toast.error('Failed to load field activities');
+        } finally {
+          setActivitiesLoading(false);
+        }
+      };
+      loadFieldActivities();
+    } else {
+      setFieldActivities([]);
+    }
+  }, [selectedField]);
+
   const loadFields = async () => {
     try {
       setLoading(true);
@@ -163,7 +206,7 @@ const Fields: React.FC = () => {
       const convertedFields: Field[] = apiFields.map(f => ({
         id: f.id,
         name: f.name,
-        size: `${f.size} ha`,
+        size: `${formatNumber(f.size)} ha`,
         soilType: f.soil_type,
         crops: f.crops || [],
         status: f.status as 'actief' | 'inactief',
@@ -190,7 +233,7 @@ const Fields: React.FC = () => {
     try {
       await fieldsApi.updateField(id, {
         name: field.name,
-        size: parseFloat(field.size.split(' ')[0]),
+        size: parseSizeLabel(field.size),
         soil_type: field.soilType,
         crops: field.crops,
         status: newStatus,
@@ -207,7 +250,7 @@ const Fields: React.FC = () => {
   };
 
   const totalArea = fields.reduce((sum, field) => {
-    const area = parseFloat(field.size.split(' ')[0]);
+    const area = parseSizeLabel(field.size);
     return sum + (isNaN(area) ? 0 : area);
   }, 0);
 
@@ -242,7 +285,7 @@ const Fields: React.FC = () => {
     try {
       await fieldsApi.updateField(editingField, {
         name: newField.name,
-        size: parseFloat(newField.size),
+        size: parseNumberInput(newField.size),
         soil_type: newField.soilType,
         crops: newField.crops,
         status: newField.status,
@@ -292,7 +335,7 @@ const Fields: React.FC = () => {
     try {
       await fieldsApi.createField({
         name: newField.name,
-        size: parseFloat(newField.size),
+        size: parseNumberInput(newField.size),
         soil_type: newField.soilType,
         crops: newField.crops,
         status: newField.status,
@@ -394,7 +437,7 @@ const Fields: React.FC = () => {
       toast.error('Selecteer een gewas');
       return;
     }
-    const area = parseFloat(cropArea);
+    const area = parseNumberInput(cropArea);
     if (!cropArea || isNaN(area) || area <= 0) {
       toast.error('Voer een geldig areaal in');
       return;
@@ -449,9 +492,11 @@ const Fields: React.FC = () => {
         crop_id: selectedActivityCropId,
         activity_type: activityType,
         date: new Date(activityDate).toISOString(),
-        area: parseFloat(activityArea),
+        area: parseNumberInput(activityArea),
         notes: activityNotes || undefined,
       });
+      const activities = await fieldsApi.getFieldActivities(selectedField);
+      setFieldActivities(activities);
       toast.success('Activiteit toegevoegd');
       setShowAddActivityPopup(false);
       setActivityType('');
@@ -479,6 +524,10 @@ const Fields: React.FC = () => {
     } catch (err: any) {
       toast.error('Kon gewas niet verwijderen');
     }
+  };
+
+  const getCropNameById = (cropId: number) => {
+    return fieldCrops.find(crop => crop.id === cropId)?.name || `#${cropId}`;
   };
 
   if (loading) return <div className="fields-page">Loading fields...</div>;
@@ -636,6 +685,15 @@ const Fields: React.FC = () => {
                       <span className="info-desc">🌾 Vorige teelt</span>
                     </div>
                     <div className="info-item">
+                      <span className="info-label">Laatste Activiteit</span>
+                      <span className="info-value">
+                        {latestActivity ? `${latestActivity.activity_type} (${getCropNameById(latestActivity.crop_id)})` : '-'}
+                      </span>
+                      <span className="info-desc">
+                        {latestActivity ? `📅 ${new Date(latestActivity.date).toLocaleDateString('nl-BE')}` : 'Geen activiteiten'}
+                      </span>
+                    </div>
+                    <div className="info-item">
                       <span className="info-label">Volgende Actie</span>
                       <span className="info-value highlight">{selectedFieldData.nextAction}</span>
                       <span className="info-desc">📅 Planning</span>
@@ -650,7 +708,7 @@ const Fields: React.FC = () => {
                             <div className="crop-icon">{crop.icon || '🌱'}</div>
                             <div className="crop-details">
                               <strong>{crop.name}</strong>
-                              <span>{crop.area ? `Areaal: ${crop.area} ha` : 'Geen areaal'}</span>
+                              <span>{crop.area ? `Areaal: ${formatNumber(crop.area)} ha` : 'Geen areaal'}</span>
                               {crop.planting_date && <span>Geplant op: {new Date(crop.planting_date).toLocaleDateString('nl-BE')}</span>}
                             </div>
                             <button className="crop-action" title="Verwijder gewas" onClick={() => handleRemoveCrop(crop.id)}>
@@ -663,6 +721,32 @@ const Fields: React.FC = () => {
                       <div className="no-crops-message">
                         <p>Geen gewassen toegevoegd aan dit veld</p>
                         <button className="add-crop-btn" onClick={() => setShowAddCropPopup(true)}>➕ Gewas toevoegen</button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="field-activities-section">
+                    <h4>📋 Activiteiten</h4>
+                    {activitiesLoading ? (
+                      <p className="loading-activities">Activiteiten laden...</p>
+                    ) : sortedActivities.length > 0 ? (
+                      <ul className="activity-list">
+                        {sortedActivities.slice(0, 5).map((activity) => (
+                          <li key={activity.id} className="activity-item">
+                            <div className="activity-main">
+                              <strong>{activity.activity_type}</strong>
+                              <span className="activity-crop">{getCropNameById(activity.crop_id)}</span>
+                            </div>
+                            <div className="activity-meta">
+                              <span>📅 {new Date(activity.date).toLocaleDateString('nl-BE')}</span>
+                              <span>🌾 {formatNumber(activity.area)} ha</span>
+                            </div>
+                            {activity.notes && <div className="activity-notes">{activity.notes}</div>}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="no-activities-message">
+                        <p>Geen activiteiten geregistreerd</p>
                       </div>
                     )}
                   </div>
@@ -819,6 +903,15 @@ const Fields: React.FC = () => {
                 <span className="info-desc">🌾 Vorige teelt</span>
               </div>
               <div className="info-item">
+                <span className="info-label">Laatste Activiteit</span>
+                <span className="info-value">
+                  {latestActivity ? `${latestActivity.activity_type} (${getCropNameById(latestActivity.crop_id)})` : '-'}
+                </span>
+                <span className="info-desc">
+                  {latestActivity ? `📅 ${new Date(latestActivity.date).toLocaleDateString('nl-BE')}` : 'Geen activiteiten'}
+                </span>
+              </div>
+              <div className="info-item">
                 <span className="info-label">Volgende Actie</span>
                 <span className="info-value highlight">{selectedFieldData.nextAction}</span>
                 <span className="info-desc">📅 Planning</span>
@@ -833,7 +926,7 @@ const Fields: React.FC = () => {
                       <div className="crop-icon">{crop.icon || '🌱'}</div>
                       <div className="crop-details">
                         <strong>{crop.name}</strong>
-                        <span>{crop.area ? `Areaal: ${crop.area} ha` : 'Geen areaal'}</span>
+                        <span>{crop.area ? `Areaal: ${formatNumber(crop.area)} ha` : 'Geen areaal'}</span>
                         {crop.planting_date && <span>Geplant op: {new Date(crop.planting_date).toLocaleDateString('nl-BE')}</span>}
                       </div>
                       <button className="crop-action" title="Verwijder gewas" onClick={() => handleRemoveCrop(crop.id)}>
@@ -846,6 +939,32 @@ const Fields: React.FC = () => {
                 <div className="no-crops-message">
                   <p>Geen gewassen toegevoegd aan dit veld</p>
                   <button className="add-crop-btn" onClick={() => setShowAddCropPopup(true)}>➕ Gewas toevoegen</button>
+                </div>
+              )}
+            </div>
+            <div className="field-activities-section">
+              <h4>📋 Activiteiten</h4>
+              {activitiesLoading ? (
+                <p className="loading-activities">Activiteiten laden...</p>
+              ) : sortedActivities.length > 0 ? (
+                <ul className="activity-list">
+                  {sortedActivities.slice(0, 5).map((activity) => (
+                    <li key={activity.id} className="activity-item">
+                      <div className="activity-main">
+                        <strong>{activity.activity_type}</strong>
+                        <span className="activity-crop">{getCropNameById(activity.crop_id)}</span>
+                      </div>
+                      <div className="activity-meta">
+                        <span>📅 {new Date(activity.date).toLocaleDateString('nl-BE')}</span>
+                        <span>🌾 {formatNumber(activity.area)} ha</span>
+                      </div>
+                      {activity.notes && <div className="activity-notes">{activity.notes}</div>}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="no-activities-message">
+                  <p>Geen activiteiten geregistreerd</p>
                 </div>
               )}
             </div>
@@ -1051,12 +1170,19 @@ const Fields: React.FC = () => {
               </div>
               <div className="form-group">
                 <label>Laatste Gewas</label>
-                <input
-                  type="text"
+                <select
                   value={newField.lastCrop}
                   onChange={(e) => setNewField({...newField, lastCrop: e.target.value})}
-                  placeholder="Bijv. Tarwe"
-                />
+                >
+                  <option value="">Geen</option>
+                  {newField.lastCrop && !availableCrops.some(crop => crop.name === newField.lastCrop) && (
+                    <option value={newField.lastCrop}>{newField.lastCrop}</option>
+                  )}
+                  {availableCrops.map(crop => (
+                    <option key={crop.id} value={crop.name}>{crop.name}</option>
+                  ))}
+                </select>
+                <p className="form-hint">Optioneel. Kies een gewas uit de lijst.</p>
               </div>
               <div className="form-group">
                 <label>Volgende Actie</label>
@@ -1120,7 +1246,7 @@ const Fields: React.FC = () => {
                   placeholder="Bijv. 2.5"
                 />
                 <p className="form-hint">
-                  Maximaal beschikbaar: {selectedFieldData ? parseFloat(selectedFieldData.size.split(' ')[0]) : 0} ha
+                  Maximaal beschikbaar: {selectedFieldData ? formatNumber(parseSizeLabel(selectedFieldData.size)) : 0} ha
                 </p>
               </div>
             </div>
