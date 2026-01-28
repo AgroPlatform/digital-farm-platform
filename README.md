@@ -1,13 +1,13 @@
 # Digital Farm Platform
 
-A modern monorepo architecture featuring a FastAPI backend, Next.js frontend, and PostgreSQL database for agricultural management systems.
+A modern monorepo architecture featuring a FastAPI backend, Vite frontend, and PostgreSQL database for agricultural management systems.
 
 ## 🏗️ Architecture Overview
 
 This project is structured as a monorepo containing three main components:
 
 - **Backend**: FastAPI (Python 3.11) REST API with SQLAlchemy 2.0
-- **Frontend**: Next.js (React + TypeScript) with Tailwind CSS
+- **Frontend**: Vite (React + TypeScript) with Tailwind CSS
 - **Database**: PostgreSQL 15
 
 ## 📁 Project Structure
@@ -28,15 +28,14 @@ digital-farm-platform/
 │   ├── Dockerfile            # Backend container configuration
 │   └── .env.example          # Environment variables template
 │
-├── frontend/                  # Next.js Frontend
+├── frontend/                  # Vite Frontend
 │   ├── src/
-│   │   └── app/
-│   │       ├── page.tsx      # Home page with health check
-│   │       ├── layout.tsx    # Root layout
-│   │       └── globals.css   # Global styles
+│   │   ├── App.tsx           # Main application shell
+│   │   ├── main.tsx          # Vite entry point
+│   │   └── index.css         # Global styles
 │   ├── public/               # Static assets
 │   ├── package.json          # Node.js dependencies
-│   ├── next.config.ts        # Next.js configuration
+│   ├── vite.config.ts        # Vite configuration
 │   ├── tsconfig.json         # TypeScript configuration
 │   ├── Dockerfile           # Frontend container configuration
 │   └── .env.example         # Environment variables template
@@ -214,7 +213,7 @@ Security and schema notes
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `NEXT_PUBLIC_API_URL` | Backend API URL | `http://localhost:8000` |
+| `VITE_API_URL` | Backend API URL | `http://localhost:8000` |
 
 ## 📚 API Endpoints
 
@@ -234,7 +233,7 @@ Security and schema notes
 
 - **Run development server**: `npm run dev`
 - **Build for production**: `npm run build`
-- **Start production server**: `npm start`
+- **Preview production build**: `npm run preview`
 - **Lint code**: `npm run lint`
 
 ## 🐳 Docker Commands
