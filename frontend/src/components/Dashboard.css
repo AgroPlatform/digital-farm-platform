@@ -79,36 +79,6 @@
 }
 
 
-.nav-icon {
-  position: relative;
-  background: none;
-  border: none;
-  font-size: 1.3rem;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  transition: background-color 0.2s;
-}
-
-.nav-icon:hover {
-  background-color: #f0f0f0;
-}
-
-.notification-badge {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  background: #ff4757;
-  color: white;
-  font-size: 0.7rem;
-  font-weight: bold;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 .user-profile {
   display: flex;
@@ -528,14 +498,4 @@
     min-width: 100%;
   }
   
-  .nav-icon {
-    font-size: 1.1rem;
-    padding: 6px;
-  }
-  
-  .notification-badge {
-    width: 16px;
-    height: 16px;
-    font-size: 0.6rem;
-  }
 }
