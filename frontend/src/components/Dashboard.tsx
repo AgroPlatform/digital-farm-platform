@@ -1,52 +1,118 @@
-import React from 'react';
-import './Dashboard.css';
+import React, { useEffect, useState } from "react";
+import "./Dashboard.css";
+import * as fieldsApi from "../api/fields";
+
+interface User {
+  email: string;
+  full_name?: string;
+}
+
+interface Field {
+  id: number;
+  name: string;
+  size: number;
+  status: "Plantfase" | "Groei" | "Geoogst";
+  crop: string;
+  progress: number;
+}
+
+interface Activity {
+  user: string;
+  action: string;
+  time: string;
+  icon: string;
+}
+
+interface WeatherData {
+  temp: number;
+  condition: string;
+  humidity: number;
+  wind: number;
+}
 
 const Dashboard: React.FC = () => {
-  // Statistieken voor agro dashboard
+  const [user, setUser] = useState<User | null>(null);
+  const [fields, setFields] = useState<Field[]>([]);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activities, setActivities] = useState<Activity[]>([]);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // 1️⃣ Haal user info op
+        const userRes = await fetch("http://localhost:8000/user/profile", {
+          credentials: "include",
+        });
+        const userJson = await userRes.json();
+        setUser(userJson);
+
+        // 2️⃣ Haal velden op
+        const fieldsData: Field[] = await fieldsApi.getFields();
+        setFields(fieldsData);
+
+        // 3️⃣ Haal weer op
+        const weatherRes = await fetch("http://localhost:8000/weather?city=Antwerpen");
+        const weatherJson = await weatherRes.json();
+        setWeather({
+          temp: Math.round(weatherJson.main.temp),
+          condition: weatherJson.weather[0].description,
+          humidity: weatherJson.main.humidity,
+          wind: Math.round(weatherJson.wind.speed * 3.6),
+        });
+
+        // 4️⃣ Genereer recente activiteiten
+        const recentActivities: Activity[] = fieldsData.slice(0, 4).map((field) => ({
+          user: field.name,
+          action: `${field.crop} status: ${field.status}`,
+          time: "Vandaag",
+          icon: "🌱",
+        }));
+        setActivities(recentActivities);
+
+      } catch (err) {
+        console.error("Dashboard load error", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
+  if (loading)
+    return <div className="dashboard-container p-6">Dashboard laden…</div>;
+
+  // Statistieken berekenen
+  const totalFields = fields.length;
+  const activeFields = fields.filter(f => f.status !== "Geoogst").length;
+  const totalCrops = fields.reduce((sum, f) => sum + 1, 0); // 1 per veld
+  const totalArea = fields.reduce((sum, f) => sum + f.size, 0);
+
   const stats = [
-    { title: 'Totaal Velden', value: '6', change: '+1 dit jaar', icon: '🌾' },
-    { title: 'Actieve Gewassen', value: '12', change: '+3 deze maand', icon: '🌽' },
-    { title: 'Oppervlakte', value: '28 ha', change: '+5 ha dit jaar', icon: '📏' },
-    { title: 'Oogst Status', value: '85%', change: '+12% dit seizoen', icon: '📊' },
+    { title: "Totaal Velden", value: totalFields, icon: "🌾" },
+    { title: "Actieve Gewassen", value: totalCrops, icon: "🌽" },
+    { title: "Oppervlakte", value: `${totalArea} ha`, icon: "📏" },
+    { title: "Oogst Status", value: `${Math.round((activeFields/totalFields)*100)}%`,icon: "📊" },
   ];
-
-  const recentActivities = [
-    { user: 'Systeem', action: 'Weerwaarschuwing: nachtvorst verwacht', time: '2 uur geleden', icon: '🌤️' },
-    { user: 'Noord Akker', action: 'Aardappelen plantdatum nadert (15 maart)', time: '5 uur geleden', icon: '🌱' },
-    { user: 'Zuid Weide', action: 'Maïs oogst voltooid - 12 ton opbrengst', time: 'Gisteren', icon: '🌾' },
-    { user: 'Slimme Planner', action: 'Nieuwe aanbeveling: Bemesting tarwe', time: '2 dagen geleden', icon: '💡' },
-  ];
-
-  const fields = [
-    { name: 'Noord Akker', size: '5 ha', crop: 'Aardappelen', status: 'Plantfase', progress: 25 },
-    { name: 'Zuid Weide', size: '3 ha', crop: 'Maïs', status: 'Geoogst', progress: 100 },
-    { name: 'Oost Veld', size: '8 ha', crop: 'Tarwe', status: 'Groei', progress: 60 },
-    { name: 'West Perceel', size: '4 ha', crop: 'Uien', status: 'Groei', progress: 45 },
-  ];
-
-  const weatherSummary = {
-    temp: '14°C',
-    condition: 'Zonnig',
-    humidity: '65%',
-    wind: '12 km/h'
-  };
 
   return (
     <>
+      {/* Welkom terug */}
       <div className="content-header">
-        <h2>Welkom terug, Jan!</h2>
-        <p>Vandaag is het {weatherSummary.condition.toLowerCase()}, {weatherSummary.temp} - Perfect weer voor veldwerk.</p>
+        <h2>Welkom terug, {user?.full_name || user?.email || "Jan de Boer"}!</h2>
+        <p>
+          Vandaag is het {weather?.condition?.toLowerCase() || "onbekend"}, {weather?.temp || "--"}°C - Perfect weer voor veldwerk.
+        </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Statistieken */}
       <div className="stats-grid">
-        {stats.map((stat, index) => (
-          <div className="stat-card" key={index}>
+        {stats.map((stat, idx) => (
+          <div className="stat-card" key={idx}>
             <div className="stat-header">
               <span className="stat-icon">{stat.icon}</span>
-              <span className="stat-change positive">
-                {stat.change}
-              </span>
+              <span className="stat-change positive">{stat.change}</span>
             </div>
             <h3 className="stat-value">{stat.value}</h3>
             <p className="stat-title">{stat.title}</p>
@@ -54,129 +120,84 @@ const Dashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Weather Quick View */}
-      <div className="content-card" style={{ 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-        color: 'white',
-        marginBottom: '32px'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.3rem' }}>🌤️ Huidig Weer</h3>
-            <p style={{ margin: 0, opacity: 0.9 }}>Boerderij De Groene Akker</p>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '3rem', fontWeight: '800', lineHeight: 1 }}>{weatherSummary.temp}</div>
-            <div style={{ fontSize: '1.2rem', opacity: 0.9 }}>{weatherSummary.condition}</div>
-          </div>
-        </div>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(3, 1fr)', 
-          gap: '16px', 
-          marginTop: '24px',
-          paddingTop: '24px',
-          borderTop: '1px solid rgba(255,255,255,0.2)'
+      {/* Weather Card */}
+      {weather && (
+        <div className="content-card" style={{ 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+          color: 'white',
+          marginBottom: '32px'
         }}>
-          <div>
-            <div style={{ opacity: 0.8, fontSize: '0.9rem' }}>💧 Vochtigheid</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{weatherSummary.humidity}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '1.3rem' }}>🌤️ Huidig Weer</h3>
+              <p style={{ margin: 0, opacity: 0.9 }}>Boerderij De Groene Akker</p>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '3rem', fontWeight: '800', lineHeight: 1 }}>{weather.temp}°C</div>
+              <div style={{ fontSize: '1.2rem', opacity: 0.9 }}>{weather.condition}</div>
+            </div>
           </div>
-          <div>
-            <div style={{ opacity: 0.8, fontSize: '0.9rem' }}>💨 Wind</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{weatherSummary.wind}</div>
-          </div>
-          <div>
-            <div style={{ opacity: 0.8, fontSize: '0.9rem' }}>📅 Voorspelling</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>3 dagen zon</div>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(3, 1fr)', 
+            gap: '16px', 
+            marginTop: '24px',
+            paddingTop: '24px',
+            borderTop: '1px solid rgba(255,255,255,0.2)'
+          }}>
+            <div>
+              <div style={{ opacity: 0.8, fontSize: '0.9rem' }}>💧 Vochtigheid</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{weather.humidity}%</div>
+            </div>
+            <div>
+              <div style={{ opacity: 0.8, fontSize: '0.9rem' }}>💨 Wind</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{weather.wind} km/h</div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Two-column layout */}
       <div className="content-grid">
-        {/* Left column: Fields Overview */}
+        {/* Fields */}
         <div className="content-card">
           <div className="card-header">
             <h3>Veld Overzicht</h3>
-            <button className="view-all">Bekijk alle →</button>
           </div>
           <div className="projects-list">
-            {fields.map((field, index) => (
-              <div className="project-item" key={index}>
+            {fields.map((field) => (
+              <div className="project-item" key={field.id}>
                 <div className="project-info">
                   <h4>{field.name}</h4>
                   <div className="project-meta">
-                    <span className="project-status actief">{field.status}</span>
+                    <span className={`project-status ${field.status === "Geoogst" ? "" : "actief"}`}>{field.status}</span>
                     <span className="project-team">🌱 {field.crop}</span>
-                    <span className="project-team">📏 {field.size}</span>
+                    <span className="project-team">📏 {field.size} ha</span>
                   </div>
-                  <div className="progress-bar">
-                    <div 
-                      className="progress-fill" 
-                      style={{ width: `${field.progress}%` }}
-                    ></div>
-                  </div>
-                  <div className="progress-text">{field.progress}% groei cyclus</div>
                 </div>
-                <button className="project-action">📋</button>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Right column: Recent Activity */}
+        {/* Recent Activities */}
         <div className="content-card">
           <div className="card-header">
             <h3>Recente Updates</h3>
-            <button className="view-all">Bekijk alle →</button>
           </div>
           <div className="activities-list">
-            {recentActivities.map((activity, index) => (
-              <div className="activity-item" key={index}>
-                <div className="activity-avatar" style={{ 
-                  background: 'linear-gradient(135deg, #4CAF50, #2E7D32)' 
-                }}>
+            {activities.map((activity, idx) => (
+              <div className="activity-item" key={idx}>
+                <div className="activity-avatar" style={{ background: 'linear-gradient(135deg, #4CAF50, #2E7D32)' }}>
                   {activity.icon}
                 </div>
                 <div className="activity-content">
-                  <p>
-                    <strong>{activity.user}</strong> - {activity.action}
-                  </p>
+                  <p><strong>{activity.user}</strong> - {activity.action}</p>
                   <span className="activity-time">{activity.time}</span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Bottom section: Quick Actions */}
-      <div className="content-card">
-        <div className="card-header">
-          <h3>Snelle Acties</h3>
-        </div>
-        <div className="quick-actions">
-          <button className="action-button">
-            <span className="action-icon">➕</span>
-            Nieuw Veld
-          </button>
-          <button className="action-button">
-            <span className="action-icon">🌱</span>
-            Gewas Toevoegen
-          </button>
-          <button className="action-button">
-            <span className="action-icon">🌤️</span>
-            Weer Bekijken
-          </button>
-          <button className="action-button">
-            <span className="action-icon">🧠</span>
-            Slimme Planner
-          </button>
-          <button className="action-button">
-            <span className="action-icon">📊</span>
-            Rapporten
-          </button>
         </div>
       </div>
     </>
