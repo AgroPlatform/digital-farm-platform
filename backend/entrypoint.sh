@@ -84,43 +84,34 @@ for _ in range(60):
 else:
   print(f'Database {db_name} still unreachable, exiting')
   sys.exit(1)
-
-# Ensure users table exists with all required columns (fallback if Alembic didn't create it)
-try:
-  conn = psycopg2.connect(dbname=db_name, user=db_user, password=db_password, host=db_host, port=db_port)
-  conn.autocommit = True
-  cur = conn.cursor()
-  cur.execute(sql.SQL('''
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      hashed_password VARCHAR(255) NOT NULL,
-      full_name VARCHAR(255),
-      phone VARCHAR(50),
-      job_title VARCHAR(255),
-      is_active BOOLEAN NOT NULL DEFAULT true,
-      notification_preferences JSON,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-    );
-  '''))
-  cur.close()
-  conn.close()
-  print('Ensured users table exists with all columns')
-except Exception as e:
-  print('Error ensuring users table exists:', e)
-  # proceed, create_user will handle missing table with error message
-
 PY
 
-echo "Database is up, running migrations (if any) and creating test user"
+echo "Database is up, preparing schema and creating test user"
 
-if [ -d "alembic" ]; then
-  if command -v alembic >/dev/null 2>&1; then
-    echo "Running alembic upgrade head"
-    alembic upgrade head || true
-  else
-    echo "alembic not installed in container, skipping migrations"
-  fi
+# Dev-only automatic table creation for ephemeral DBs. Set DEV_DB_CREATE=false
+# to disable this in environments where you prefer to manage schema separately.
+if [ "${DEV_DB_CREATE:-true}" = "true" ]; then
+  python - <<'PY'
+try:
+  # Import model modules so Base.metadata is populated with all tables
+  # (users, fields, revoked_tokens, etc.). Without these imports
+  # create_all() may not create tables defined in modules that haven't
+  # been imported yet.
+  import app.models.user  # noqa: F401
+  import app.models.field  # noqa: F401
+  import app.db.models  # noqa: F401
+  from app.db.session import engine, Base
+  print('DEV_DB_CREATE enabled: creating tables from SQLAlchemy models (if missing)')
+  Base.metadata.create_all(bind=engine)
+  print('Tables created (if they did not exist)')
+except Exception as e:
+  print('Error creating tables from models:', e)
+  # Continue; if this fails the subsequent script may still provide useful
+  # diagnostics or the container will fail later.
+  pass
+PY
+else
+  echo "DEV_DB_CREATE is false — skipping automatic create_all()"
 fi
 
 # Create test user via script (idempotent)
