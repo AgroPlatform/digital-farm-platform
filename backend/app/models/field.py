@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, Float, JSON, ForeignKey, Date
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 from .activity import field_crop_association
@@ -18,6 +18,10 @@ class Field(Base):
     address = Column(String(500), nullable=True)
     lat = Column(Float, nullable=True)
     lng = Column(Float, nullable=True)
+    
+    # Growth tracking
+    planting_date = Column(Date, nullable=True)  # When was the current crop planted
+    growth_days = Column(Integer, nullable=True, default=0)  # Expected days to harvest
 
     # Relationships
     user = relationship("User", back_populates="fields")
