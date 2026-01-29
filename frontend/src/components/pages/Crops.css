@@ -35,6 +35,7 @@
 
 .header-title-text {
   background: linear-gradient(135deg, #2d3436 0%, #000000 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -541,7 +542,98 @@
 }
 
 .calendar-month {
-  padding: 16px 8px;
+  padding: 14px 8px;
+  border-radius: 14px;
+  background: #f8f9fb;
+  border: 1px solid #eef2f6;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.calendar-month.active {
+  background: #ffffff;
+  border-color: #dfe7ee;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+}
+
+.month-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #2d3436;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.month-crops {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 24px;
+}
+
+.crop-indicator {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+}
+
+.crop-indicator.plant {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.crop-indicator.grow {
+  background: #FF9800;
+}
+
+.crop-indicator.harvest {
+  background: #2196F3;
+}
+
+.calendar-hint {
+  margin: 16px 0 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.calendar-legend {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #4d5661;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-color.plant {
+  background: #4CAF50;
+}
+
+.legend-color.grow {
+  background: #FF9800;
+}
+
+.legend-color.harvest {
+  background: #2196F3;
 }
 
 /* Recommendations Card - Improved Styling */

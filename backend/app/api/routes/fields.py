@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -18,20 +18,6 @@ from app.schemas.crop import Crop as CropSchema
 
 router = APIRouter(prefix="/fields", tags=["Fields"])
 
-from datetime import datetime
-from typing import List, Optional
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-
-from app.api.routes.user import get_current_user
-from app.db.session import get_db
-from app.models.field import Field
-from app.models.user import User
-
-router = APIRouter(prefix="/fields", tags=["Fields"])
-
 
 # Pydantic models
 class FieldBase(BaseModel):
@@ -45,6 +31,8 @@ class FieldBase(BaseModel):
     address: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
+    planting_date: Optional[date] = None
+    growth_days: Optional[int] = None
 
 
 class FieldCreate(FieldBase):
@@ -62,6 +50,7 @@ class FieldCropDetail(CropSchema):
 class FieldResponse(FieldBase):
     id: int
     user_id: int
+    progress: int = 0  # Calculated field
 
     @field_validator('crops', mode='before')
     @classmethod
@@ -77,6 +66,25 @@ class FieldResponse(FieldBase):
 
     class Config:
         from_attributes = True
+
+
+def calculate_progress(field: Field) -> int:
+    """Calculate progress percentage based on planting date and growth days.
+    
+    Progress = (days_elapsed / total_growth_days) * 100
+    Capped at 100%.
+    """
+    if not field.planting_date or not field.growth_days or field.growth_days == 0:
+        return 0
+    
+    today = date.today()
+    days_elapsed = (today - field.planting_date).days
+    
+    # Calculate progress as percentage
+    progress = int((days_elapsed / field.growth_days) * 100)
+    
+    # Cap at 100%
+    return min(progress, 100)
 
 
 class FieldHistoryCreate(BaseModel):
@@ -156,11 +164,12 @@ def update_field(
             detail="Field not found"
         )
 
-    for key, value in field_update.model_dump(exclude_unset=True, exclude={"crops"}).items():
+    for key, value in field_update.model_dump(exclude_unset=True).items():
         setattr(db_field, key, value)
 
     db.commit()
     db.refresh(db_field)
+    db_field.progress = calculate_progress(db_field)
     return db_field
 
 
@@ -186,67 +195,19 @@ def delete_field(
     return None
 
 
-
-# Pydantic models
-class FieldBase(BaseModel):
-    name: str
-    size: float
-    soil_type: str
-    crops: List[str] = []
-    status: str = "actief"
-    last_crop: Optional[str] = None
-    next_action: Optional[str] = None
-    address: Optional[str] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-
-
-class FieldCreate(FieldBase):
-    pass
-
-
-class FieldUpdate(FieldBase):
-    pass
-
-
-class FieldResponse(FieldBase):
-    id: int
-    user_id: int
-
-    @field_validator('crops', mode='before')
-    @classmethod
-    def convert_crops_to_strings(cls, v):
-        if isinstance(v, list):
-            if v and hasattr(v[0], 'name'):
-                return [crop.name for crop in v]
-            elif v and isinstance(v[0], str):
-                return v
-        return v or []
-
-    class Config:
-        from_attributes = True
-
-
-class FieldHistoryCreate(BaseModel):
-    action: str
-    details: Optional[str] = None
-
-
-class FieldHistoryResponse(BaseModel):
-    id: int
-    field_id: int
-    date: datetime
-    action: str
-    details: Optional[str]
-
-
 @router.get("/", response_model=List[FieldResponse])
 def get_fields(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Get all fields for the current user."""
-    return db.query(Field).filter(Field.user_id == current_user.id).all()
+    fields = db.query(Field).filter(Field.user_id == current_user.id).all()
+    
+    # Add progress to each field
+    for field in fields:
+        field.progress = calculate_progress(field)
+    
+    return fields
 
 @router.get("/{field_id}/city")
 def get_field_city(
@@ -293,6 +254,8 @@ def get_field(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Field not found"
         )
+    # Calculate progress
+    field.progress = calculate_progress(field)
     return field
 
 
@@ -310,6 +273,7 @@ def create_field(
     db.add(db_field)
     db.commit()
     db.refresh(db_field)
+    db_field.progress = calculate_progress(db_field)
     return db_field
 
 
@@ -336,6 +300,7 @@ def update_field(
 
     db.commit()
     db.refresh(db_field)
+    db_field.progress = calculate_progress(db_field)
     return db_field
 
 
@@ -417,11 +382,19 @@ def add_crop_to_field(
     )
     db.execute(stmt)
     db_field.last_crop = db_crop.name
+    
+    # Set planting_date and growth_days from the crop
+    if field_crop.planting_date:
+        db_field.planting_date = field_crop.planting_date
+    if db_crop.growth_days:
+        db_field.growth_days = db_crop.growth_days
+    
     db.add(db_field)
     db.commit()
 
     # Refresh the field to get updated relationships
     db.refresh(db_field)
+    db_field.progress = calculate_progress(db_field)
     return db_field
 
 @router.get("/{field_id}/crops", response_model=List[FieldCropDetail])

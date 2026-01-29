@@ -22,6 +22,7 @@ interface Activity {
   action: string;
   time: string;
   icon: string;
+  type: "info" | "warning" | "success";
 }
 
 interface WeatherData {
@@ -31,12 +32,22 @@ interface WeatherData {
   wind: number;
 }
 
+interface Alert {
+  id: number;
+  title: string;
+  message: string;
+  type: "warning" | "info" | "error";
+  fieldId?: number;
+}
+
 const Dashboard: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [fields, setFields] = useState<Field[]>([]);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [dismissedAlerts, setDismissedAlerts] = useState<number[]>([]);
 
   const mapField = (field: ApiField): Field => {
     const crop = field.last_crop ?? field.crops?.[0] ?? "Onbekend";
@@ -64,9 +75,9 @@ const Dashboard: React.FC = () => {
         setUser(userJson);
 
         // 2️⃣ Haal velden op
-  const fieldsData = await fieldsApi.getFields();
-  const mappedFields = fieldsData.map(mapField);
-  setFields(mappedFields);
+        const fieldsData = await fieldsApi.getFields();
+        const mappedFields = fieldsData.map(mapField);
+        setFields(mappedFields);
 
         // 3️⃣ Haal weer op
         const weatherRes = await fetch("http://localhost:8000/weather?city=Antwerpen");
@@ -78,14 +89,39 @@ const Dashboard: React.FC = () => {
           wind: Math.round(weatherJson.wind.speed * 3.6),
         });
 
-        // 4️⃣ Genereer recente activiteiten
+        // 4️⃣ Genereer recente activiteiten en alerts
         const recentActivities: Activity[] = mappedFields.slice(0, 4).map((field) => ({
           user: field.name,
           action: `${field.crop} status: ${field.status}`,
           time: "Vandaag",
           icon: "🌱",
+          type: field.status === "Geoogst" ? "warning" : "info",
         }));
         setActivities(recentActivities);
+
+        // 5️⃣ Genereer alerts
+        const generatedAlerts: Alert[] = [];
+        mappedFields.forEach((field) => {
+          if (field.status === "Groei" && field.progress > 80) {
+            generatedAlerts.push({
+              id: field.id * 100,
+              title: "Oogstvoorbereiding nodig",
+              message: `Veld "${field.name}" is bijna volgroeid. Begin met voorbereiding voor oogst.`,
+              type: "warning",
+              fieldId: field.id,
+            });
+          }
+          if (field.progress < 30) {
+            generatedAlerts.push({
+              id: field.id * 101,
+              title: "Monitoring vereist",
+              message: `Veld "${field.name}" vereist monitoring. Controleer groeiomstandigheden.`,
+              type: "info",
+              fieldId: field.id,
+            });
+          }
+        });
+        setAlerts(generatedAlerts);
 
       } catch (err) {
         console.error("Dashboard load error", err);
@@ -105,6 +141,7 @@ const Dashboard: React.FC = () => {
   const activeFields = fields.filter(f => f.status !== "Geoogst").length;
   const totalCrops = fields.reduce((sum, f) => sum + 1, 0); // 1 per veld
   const totalArea = fields.reduce((sum, f) => sum + f.size, 0);
+  const avgProgress = fields.length > 0 ? Math.round(fields.reduce((sum, f) => sum + f.progress, 0) / fields.length) : 0;
 
   const harvestStatus = totalFields > 0 ? Math.round((activeFields / totalFields) * 100) : 0;
 
@@ -113,12 +150,20 @@ const Dashboard: React.FC = () => {
     value: number | string;
     icon: string;
     change?: string;
+    trend?: "up" | "down";
   }> = [
-    { title: "Totaal Velden", value: totalFields, icon: "🌾" },
+    { title: "Totaal Velden", value: totalFields, icon: "🌾", change: "+2", trend: "up" },
     { title: "Actieve Gewassen", value: totalCrops, icon: "🌽" },
     { title: "Oppervlakte", value: `${totalArea} ha`, icon: "📏" },
-    { title: "Oogst Status", value: `${harvestStatus}%`, icon: "📊" },
+    { title: "Gemiddelde Groei", value: `${avgProgress}%`, icon: "📈", change: "+15%", trend: "up" },
   ];
+
+  // Filter alerts
+  const visibleAlerts = alerts.filter(alert => !dismissedAlerts.includes(alert.id));
+
+  const dismissAlert = (id: number) => {
+    setDismissedAlerts([...dismissedAlerts, id]);
+  };
 
   return (
     <>
@@ -130,6 +175,29 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
 
+      {/* Alerts Section */}
+      {visibleAlerts.length > 0 && (
+        <div className="alerts-container">
+          {visibleAlerts.map((alert) => (
+            <div key={alert.id} className={`alert alert-${alert.type}`}>
+              <span className="alert-icon">
+                {alert.type === "warning" ? "⚠️" : alert.type === "error" ? "❌" : "ℹ️"}
+              </span>
+              <div className="alert-content">
+                <strong>{alert.title}</strong>
+                <p>{alert.message}</p>
+              </div>
+              <button 
+                className="alert-close"
+                onClick={() => dismissAlert(alert.id)}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Statistieken */}
       <div className="stats-grid">
         {stats.map((stat, idx) => (
@@ -137,7 +205,9 @@ const Dashboard: React.FC = () => {
             <div className="stat-header">
               <span className="stat-icon">{stat.icon}</span>
               {stat.change && (
-                <span className="stat-change positive">{stat.change}</span>
+                <span className={`stat-change ${stat.trend === "up" ? "positive" : "negative"}`}>
+                  {stat.trend === "up" ? "↑" : "↓"} {stat.change}
+                </span>
               )}
             </div>
             <h3 className="stat-value">{stat.value}</h3>
@@ -183,12 +253,36 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Snelkoppelingen */}
+      <div className="quick-actions-section">
+        <h3 className="section-title">Snelkoppelingen</h3>
+        <div className="quick-actions">
+          <button className="action-button">
+            <span className="action-icon">➕</span>
+            Nieuw Veld
+          </button>
+          <button className="action-button">
+            <span className="action-icon">📅</span>
+            Plant Planning
+          </button>
+          <button className="action-button">
+            <span className="action-icon">📊</span>
+            Rapporten
+          </button>
+          <button className="action-button">
+            <span className="action-icon">🌾</span>
+            Oogst Plannenen
+          </button>
+        </div>
+      </div>
+
       {/* Two-column layout */}
       <div className="content-grid">
         {/* Fields */}
         <div className="content-card">
           <div className="card-header">
             <h3>Veld Overzicht</h3>
+            <span className="card-badge">{fields.length} velden</span>
           </div>
           <div className="projects-list">
             {fields.map((field) => (
@@ -200,6 +294,10 @@ const Dashboard: React.FC = () => {
                     <span className="project-team">🌱 {field.crop}</span>
                     <span className="project-team">📏 {field.size} ha</span>
                   </div>
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{ width: `${field.progress}%` }}></div>
+                  </div>
+                  <div className="progress-text">{field.progress}% Volgroeid</div>
                 </div>
               </div>
             ))}
@@ -210,19 +308,26 @@ const Dashboard: React.FC = () => {
         <div className="content-card">
           <div className="card-header">
             <h3>Recente Updates</h3>
+            <span className="card-badge">{activities.length} updates</span>
           </div>
           <div className="activities-list">
-            {activities.map((activity, idx) => (
-              <div className="activity-item" key={idx}>
-                <div className="activity-avatar" style={{ background: 'linear-gradient(135deg, #4CAF50, #2E7D32)' }}>
-                  {activity.icon}
+            {activities.length > 0 ? (
+              activities.map((activity, idx) => (
+                <div className="activity-item" key={idx}>
+                  <div className={`activity-avatar activity-${activity.type}`}>
+                    {activity.icon}
+                  </div>
+                  <div className="activity-content">
+                    <p><strong>{activity.user}</strong> - {activity.action}</p>
+                    <span className="activity-time">{activity.time}</span>
+                  </div>
                 </div>
-                <div className="activity-content">
-                  <p><strong>{activity.user}</strong> - {activity.action}</p>
-                  <span className="activity-time">{activity.time}</span>
-                </div>
+              ))
+            ) : (
+              <div className="empty-state">
+                <p>Geen recente activiteiten</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

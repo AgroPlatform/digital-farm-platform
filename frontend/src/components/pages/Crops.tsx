@@ -12,6 +12,27 @@ const Crops: React.FC = () => {
 
   const cropTypes = ['all', 'Knolgewas', 'Graan', 'Bolgewas', 'Bladgroente'];
   const seasons = ['all', 'Lente', 'Zomer', 'Herfst', 'Voorjaar'];
+  const monthNames = ['Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
+  const seasonMonths: Record<string, number[]> = {
+    Lente: [2, 3, 4],
+    Zomer: [5, 6, 7],
+    Herfst: [8, 9, 10],
+    Winter: [11, 0, 1],
+    Voorjaar: [1, 2, 3],
+  };
+
+  const parseDurationDays = (duration?: string) => {
+    const match = duration?.match(/(\d+)/);
+    return match ? Number.parseInt(match[1], 10) : 0;
+  };
+
+  const getMonthSequence = (startMonth: number, count: number) => {
+    const months: number[] = [];
+    for (let i = 0; i < count; i += 1) {
+      months.push((startMonth + i) % 12);
+    }
+    return months;
+  };
 
   useEffect(() => {
     const fetchCrops = async () => {
@@ -38,6 +59,13 @@ const Crops: React.FC = () => {
   });
 
   const selectedCropData = crops.find(crop => crop.id === selectedCrop);
+  const selectedSeasonMonths = selectedCropData ? (seasonMonths[selectedCropData.season] || []) : [];
+  const growthDays = selectedCropData ? parseDurationDays(selectedCropData.duration) : 0;
+  const growthMonthsCount = Math.max(1, Math.ceil(growthDays / 30));
+  const growthMonths = selectedSeasonMonths.length > 0
+    ? getMonthSequence(selectedSeasonMonths[0], growthMonthsCount)
+    : [];
+  const harvestMonths = growthMonths.length > 0 ? [growthMonths[growthMonths.length - 1]] : [];
 
   const toggleCropStatus = async (id: number) => {
     const crop = crops.find(c => c.id === id);
@@ -145,15 +173,6 @@ const Crops: React.FC = () => {
                     <h4>{crop.name}</h4>
                     <span className="crop-type">{crop.type}</span>
                   </div>
-                  <button 
-                    className={`status-toggle ${crop.status}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleCropStatus(crop.id);
-                    }}
-                  >
-                    {crop.status === 'actief' ? '✅' : '⏸️'}
-                  </button>
                 </div>
               </div>
             ))}
@@ -256,28 +275,42 @@ const Crops: React.FC = () => {
         <div className="calendar-card">
           <h3>📅 Gewassen Kalender</h3>
           <div className="calendar-months">
-            {['Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'].map(month => (
-              <div key={month} className="calendar-month">
-                <span className="month-name">{month}</span>
-                <div className="month-crops">
-                  {crops.slice(0, 3).map(crop => (
-                    <span key={crop.id} className="crop-indicator" style={{ backgroundColor: '#4CAF50' }}></span>
-                  ))}
+            {monthNames.map((month, index) => {
+              const isPlant = selectedSeasonMonths.includes(index);
+              const isGrow = growthMonths.includes(index);
+              const isHarvest = harvestMonths.includes(index);
+              return (
+                <div key={month} className={`calendar-month ${isPlant || isGrow || isHarvest ? 'active' : ''}`}>
+                  <span className="month-name">{month}</span>
+                  <div className="month-crops">
+                    {selectedCropData && isPlant && (
+                      <span className="crop-indicator plant" title={`Plant: ${selectedCropData.name}`}>{selectedCropData.icon}</span>
+                    )}
+                    {selectedCropData && isGrow && (
+                      <span className="crop-indicator grow" title={`Groei: ${selectedCropData.name}`}></span>
+                    )}
+                    {selectedCropData && isHarvest && (
+                      <span className="crop-indicator harvest" title={`Oogst: ${selectedCropData.name}`}></span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+          {!selectedCropData && (
+            <p className="calendar-hint">Selecteer een gewas om de kalender te zien.</p>
+          )}
           <div className="calendar-legend">
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#4CAF50' }}></span>
+              <span className="legend-color plant"></span>
               <span>Plant seizoen</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#FF9800' }}></span>
+              <span className="legend-color grow"></span>
               <span>Groei periode</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#2196F3' }}></span>
+              <span className="legend-color harvest"></span>
               <span>Oogst periode</span>
             </div>
           </div>

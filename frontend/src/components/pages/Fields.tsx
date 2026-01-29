@@ -76,6 +76,17 @@ const formatNumber = (value: number) => {
   return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2).replace(/\.00$/, '');
 };
 
+const nextActionOptions = [
+  'Plannen',
+  'Ploegen',
+  'Zaaien',
+  'Bemesten',
+  'Irrigeren',
+  'Onkruidbestrijding',
+  'Oogsten',
+  'Rustperiode',
+];
+
 const Fields: React.FC = () => {
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,6 +96,7 @@ const Fields: React.FC = () => {
   const [editingField, setEditingField] = useState<number | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
+  const [nextActionDraft, setNextActionDraft] = useState('');
   const [newField, setNewField] = useState<{
     name: string;
     size: string;
@@ -131,6 +143,12 @@ const Fields: React.FC = () => {
   ];
 
   const selectedFieldData = fields.find(field => field.id === selectedField);
+
+  useEffect(() => {
+    if (selectedFieldData) {
+      setNextActionDraft(selectedFieldData.nextAction || '');
+    }
+  }, [selectedFieldData]);
   const latestActivity = fieldActivities.length
     ? [...fieldActivities].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
     : null;
@@ -278,8 +296,8 @@ const Fields: React.FC = () => {
 
   const saveEditedField = async () => {
     if (!editingField) return;
-    if (!newField.name.trim() || !newField.size.trim()) {
-      toast.warning('Vul alstublieft de naam en grootte van het veld in');
+    if (!newField.name.trim() || !newField.size.trim() || !newField.nextAction.trim()) {
+      toast.warning('Vul alstublieft de naam, grootte en volgende actie van het veld in');
       return;
     }
     try {
@@ -328,8 +346,8 @@ const Fields: React.FC = () => {
   };
 
   const addFieldWithForm = async () => {
-    if (!newField.name.trim() || !newField.size.trim()) {
-      toast.warning('Vul alstublieft de naam en grootte van het veld in');
+    if (!newField.name.trim() || !newField.size.trim() || !newField.nextAction.trim()) {
+      toast.warning('Vul alstublieft de naam, grootte en volgende actie van het veld in');
       return;
     }
     try {
@@ -360,6 +378,32 @@ const Fields: React.FC = () => {
       toast.success('Veld toegevoegd.');
     } catch (err: any) {
       toast.error(`Failed to create field: ${err.message}`);
+    }
+  };
+
+  const updateNextAction = async () => {
+    if (!selectedFieldData) return;
+    if (!nextActionDraft.trim()) {
+      toast.warning('Selecteer een volgende actie');
+      return;
+    }
+    try {
+      await fieldsApi.updateField(selectedFieldData.id, {
+        name: selectedFieldData.name,
+        size: parseSizeLabel(selectedFieldData.size),
+        soil_type: selectedFieldData.soilType,
+        crops: selectedFieldData.crops,
+        status: selectedFieldData.status,
+        last_crop: selectedFieldData.lastCrop,
+        next_action: nextActionDraft,
+        address: selectedFieldData.address,
+        lat: selectedFieldData.lat,
+        lng: selectedFieldData.lng,
+      });
+      await loadFields();
+      toast.success('Volgende actie bijgewerkt.');
+    } catch (err: any) {
+      toast.error(`Failed to update next action: ${err.message}`);
     }
   };
 
@@ -696,6 +740,20 @@ const Fields: React.FC = () => {
                     <div className="info-item">
                       <span className="info-label">Volgende Actie</span>
                       <span className="info-value highlight">{selectedFieldData.nextAction}</span>
+                      <div className="inline-action-row">
+                        <select
+                          value={nextActionDraft}
+                          onChange={(e) => setNextActionDraft(e.target.value)}
+                        >
+                          <option value="">Selecteer een actie</option>
+                          {nextActionOptions.map((action) => (
+                            <option key={action} value={action}>{action}</option>
+                          ))}
+                        </select>
+                        <button className="small-btn" onClick={updateNextAction}>
+                          Opslaan
+                        </button>
+                      </div>
                       <span className="info-desc">📅 Planning</span>
                     </div>
                   </div>
@@ -796,19 +854,11 @@ const Fields: React.FC = () => {
             <h3>🌾 Velden Lijst</h3>
             <p className="card-subtitle">Selecteer een veld voor details</p>
           </div>
-          <div className="action-buttons">
-            <button className="edit-btn" onClick={() => setShowAddForm(true)} title="Nieuw veld">
-              ➕
-            </button>
-          </div>
         </div>
         <div className="fields-list">
           {fields.length === 0 ? (
             <div className="no-selection">
               <p>Geen velden gevonden</p>
-              <button className="primary-button" onClick={() => setShowAddForm(true)}>
-                ➕ Voeg eerste veld toe
-              </button>
             </div>
           ) : (
             fields.map((field) => (
@@ -914,6 +964,20 @@ const Fields: React.FC = () => {
               <div className="info-item">
                 <span className="info-label">Volgende Actie</span>
                 <span className="info-value highlight">{selectedFieldData.nextAction}</span>
+                <div className="inline-action-row">
+                  <select
+                    value={nextActionDraft}
+                    onChange={(e) => setNextActionDraft(e.target.value)}
+                  >
+                    <option value="">Selecteer een actie</option>
+                    {nextActionOptions.map((action) => (
+                      <option key={action} value={action}>{action}</option>
+                    ))}
+                  </select>
+                  <button className="small-btn" onClick={updateNextAction}>
+                    Opslaan
+                  </button>
+                </div>
                 <span className="info-desc">📅 Planning</span>
               </div>
             </div>
@@ -1185,13 +1249,18 @@ const Fields: React.FC = () => {
                 <p className="form-hint">Optioneel. Kies een gewas uit de lijst.</p>
               </div>
               <div className="form-group">
-                <label>Volgende Actie</label>
-                <input
-                  type="text"
+                <label>Volgende Actie *</label>
+                <select
                   value={newField.nextAction}
                   onChange={(e) => setNewField({...newField, nextAction: e.target.value})}
-                  placeholder="Bijv. Ploegen"
-                />
+                  required
+                >
+                  <option value="">Selecteer een actie</option>
+                  {nextActionOptions.map((action) => (
+                    <option key={action} value={action}>{action}</option>
+                  ))}
+                </select>
+                <p className="form-hint">Verplicht. Kies een volgende stap voor dit veld.</p>
               </div>
             </div>
             <div className="modal-footer">

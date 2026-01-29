@@ -28,6 +28,7 @@ class Crop(Base):
     type = Column(String) # We'll store as string to be flexible or use Enum
     season = Column(String)
     duration = Column(String) # e.g. "120 dagen"
+    growth_days = Column(Integer, nullable=True, default=90)  # Standard growth period in days
     water_needs = Column(String) # "Low", "Medium", "High"
     expected_yield = Column(String) # "40 ton/ha"
     status = Column(String, default="actief") # "actief", "inactief"
