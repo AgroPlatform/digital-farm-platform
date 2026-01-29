@@ -10,11 +10,13 @@ export interface Field {
   soil_type: string;
   crops: string[];
   status: FieldStatus;
-  last_crop?: string;
   next_action?: string;
   address?: string;
   lat?: number;
   lng?: number;
+  progress?: number; // Calculated progress percentage (0-100)
+  planting_date?: string; // ISO date string
+  growth_days?: number; // Total days for crop growth cycle
 }
 
 export interface FieldCreate {
@@ -23,11 +25,12 @@ export interface FieldCreate {
   soil_type: string;
   crops?: string[];
   status?: FieldStatus;
-  last_crop?: string;
   next_action?: string;
   address?: string;
   lat?: number;
   lng?: number;
+  planting_date?: string; // ISO date string (YYYY-MM-DD)
+  growth_days?: number; // Total days for crop growth cycle
 }
 
 export interface FieldUpdate extends FieldCreate {}

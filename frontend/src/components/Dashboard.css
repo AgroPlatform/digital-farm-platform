@@ -179,6 +179,9 @@
   font-weight: 600;
   padding: 4px 12px;
   border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .stat-change.positive {
@@ -217,6 +220,11 @@
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.content-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 .card-header {
@@ -230,6 +238,15 @@
   font-size: 1.5rem;
   color: #2d3436;
   margin: 0;
+}
+
+.card-badge {
+  background: rgba(76, 175, 80, 0.1);
+  color: #2E7D32;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .view-all {
@@ -354,6 +371,11 @@
   gap: 16px;
   padding-bottom: 20px;
   border-bottom: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.activity-item:hover {
+  padding-left: 8px;
 }
 
 .activity-item:last-child {
@@ -373,6 +395,19 @@
   font-weight: bold;
   font-size: 1rem;
   flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.activity-avatar.activity-success {
+  background: linear-gradient(135deg, #4CAF50, #2E7D32);
+}
+
+.activity-avatar.activity-warning {
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+}
+
+.activity-avatar.activity-info {
+  background: linear-gradient(135deg, #2196f3, #1976d2);
 }
 
 .activity-content p {
@@ -383,6 +418,17 @@
 .activity-time {
   font-size: 0.85rem;
   color: #636e72;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #b2bec3;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 1rem;
 }
 
 /* Quick Actions */
@@ -498,4 +544,173 @@
     min-width: 100%;
   }
   
+}
+
+/* Alerts Container */
+.alerts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border-left: 4px solid;
+  animation: slideIn 0.3s ease;
+  background: white;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.alert-warning {
+  border-left-color: #ff9800;
+  background-color: rgba(255, 152, 0, 0.05);
+}
+
+.alert-error {
+  border-left-color: #f44336;
+  background-color: rgba(244, 67, 54, 0.05);
+}
+
+.alert-info {
+  border-left-color: #2196f3;
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+.alert-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-content strong {
+  display: block;
+  color: #2d3436;
+  margin-bottom: 4px;
+}
+
+.alert-content p {
+  margin: 0;
+  color: #636e72;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.alert-close {
+  background: none;
+  border: none;
+  color: #b2bec3;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.alert-close:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #2d3436;
+}
+
+/* Quick Actions Section */
+.quick-actions-section {
+  margin-bottom: 40px;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  color: #2d3436;
+  margin: 0 0 16px 0;
+  font-weight: 600;
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.action-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 24px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3436;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  min-height: 100px;
+}
+
+.action-button:hover {
+  background: linear-gradient(135deg, #4CAF50, #2E7D32);
+  color: white;
+  border-color: #2E7D32;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(76, 175, 80, 0.3);
+}
+
+.action-button:active {
+  transform: translateY(-2px);
+}
+
+.action-icon {
+  font-size: 2rem;
+}
+
+/* Responsive adjustments for alerts */
+@media (max-width: 768px) {
+  .alerts-container {
+    margin-bottom: 24px;
+  }
+
+  .alert {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .alert-close {
+    align-self: flex-end;
+  }
+
+  .quick-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .action-button {
+    min-width: 100%;
+  }
 }

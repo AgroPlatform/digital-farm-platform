@@ -4,16 +4,16 @@ from app.db.session import SessionLocal, engine
 from app.models.crop import Crop
 from app.db.session import Base
 
-# Data from the frontend
+# Data from the frontend with growth_days (duration in days)
 initial_crops_data = [
-    { "name": 'Aardappelen', "type": 'Knolgewas', "season": 'Lente', "duration": '120 dagen', "water_needs": 'Medium', "expected_yield": '40 ton/ha', "status": 'actief', "icon": '🥔' },
-    { "name": 'Tarwe', "type": 'Graan', "season": 'Herfst', "duration": '240 dagen', "water_needs": 'Laag', "expected_yield": '8 ton/ha', "status": 'actief', "icon": '🌾' },
-    { "name": 'Maïs', "type": 'Graan', "season": 'Zomer', "duration": '90 dagen', "water_needs": 'Hoog', "expected_yield": '12 ton/ha', "status": 'actief', "icon": '🌽' },
-    { "name": 'Suikerbieten', "type": 'Knolgewas', "season": 'Lente', "duration": '180 dagen', "water_needs": 'Medium', "expected_yield": '60 ton/ha', "status": 'inactief', "icon": '🍬' },
-    { "name": 'Gerst', "type": 'Graan', "season": 'Herfst', "duration": '210 dagen', "water_needs": 'Laag', "expected_yield": '7 ton/ha', "status": 'actief', "icon": '🌾' },
-    { "name": 'Uien', "type": 'Bolgewas', "season": 'Lente', "duration": '150 dagen', "water_needs": 'Medium', "expected_yield": '50 ton/ha', "status": 'actief', "icon": '🧅' },
-    { "name": 'Wortelen', "type": 'Knolgewas', "season": 'Lente', "duration": '100 dagen', "water_needs": 'Medium', "expected_yield": '45 ton/ha', "status": 'inactief', "icon": '🥕' },
-    { "name": 'Spinazie', "type": 'Bladgroente', "season": 'Voorjaar', "duration": '45 dagen', "water_needs": 'Hoog', "expected_yield": '20 ton/ha', "status": 'actief', "icon": '🥬' },
+    { "name": 'Aardappelen', "type": 'Knolgewas', "season": 'Lente', "duration": '120 dagen', "growth_days": 120, "water_needs": 'Medium', "expected_yield": '40 ton/ha', "status": 'actief', "icon": '🥔' },
+    { "name": 'Tarwe', "type": 'Graan', "season": 'Herfst', "duration": '240 dagen', "growth_days": 240, "water_needs": 'Laag', "expected_yield": '8 ton/ha', "status": 'actief', "icon": '🌾' },
+    { "name": 'Maïs', "type": 'Graan', "season": 'Zomer', "duration": '90 dagen', "growth_days": 90, "water_needs": 'Hoog', "expected_yield": '12 ton/ha', "status": 'actief', "icon": '🌽' },
+    { "name": 'Suikerbieten', "type": 'Knolgewas', "season": 'Lente', "duration": '180 dagen', "growth_days": 180, "water_needs": 'Medium', "expected_yield": '60 ton/ha', "status": 'inactief', "icon": '🍬' },
+    { "name": 'Gerst', "type": 'Graan', "season": 'Herfst', "duration": '210 dagen', "growth_days": 210, "water_needs": 'Laag', "expected_yield": '7 ton/ha', "status": 'actief', "icon": '🌾' },
+    { "name": 'Uien', "type": 'Bolgewas', "season": 'Lente', "duration": '150 dagen', "growth_days": 150, "water_needs": 'Medium', "expected_yield": '50 ton/ha', "status": 'actief', "icon": '🧅' },
+    { "name": 'Wortelen', "type": 'Knolgewas', "season": 'Lente', "duration": '100 dagen', "growth_days": 100, "water_needs": 'Medium', "expected_yield": '45 ton/ha', "status": 'inactief', "icon": '🥕' },
+    { "name": 'Spinazie', "type": 'Bladgroente', "season": 'Voorjaar', "duration": '45 dagen', "growth_days": 45, "water_needs": 'Hoog', "expected_yield": '20 ton/ha', "status": 'actief', "icon": '🥬' },
 ]
 
 def seed_crops(db: Session):
@@ -27,7 +27,7 @@ def seed_crops(db: Session):
         crop = Crop(**crop_data)
         db.add(crop)
     db.commit()
-    print("Crops seeded successfully.")
+    print("Crops seeded successfully with growth_days.")
 
 async def main():
     print("Starting crop seeder...")
