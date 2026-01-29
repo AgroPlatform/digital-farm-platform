@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import inspect, text
 from app.core.config import settings
 from app.db.session import Base, engine
 
@@ -44,6 +45,28 @@ app.include_router(crops_router.router, prefix="/crops", tags=["Crops"])
 def ensure_schema_for_dev() -> None:
     if settings.DEBUG:
         Base.metadata.create_all(bind=engine)
+    if settings.AUTO_MIGRATE:
+        add_missing_field_columns()
+
+
+def add_missing_field_columns() -> None:
+    inspector = inspect(engine)
+    if "fields" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("fields")}
+    columns_to_add = []
+    if "planting_date" not in existing_columns:
+        columns_to_add.append("ALTER TABLE fields ADD COLUMN IF NOT EXISTS planting_date DATE")
+    if "growth_days" not in existing_columns:
+        columns_to_add.append("ALTER TABLE fields ADD COLUMN IF NOT EXISTS growth_days INTEGER")
+
+    if not columns_to_add:
+        return
+
+    with engine.begin() as connection:
+        for statement in columns_to_add:
+            connection.execute(text(statement))
 
 
 @app.get("/")
