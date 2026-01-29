@@ -35,6 +35,8 @@ class RegisterRequest(BaseModel):
 class LoginResponse(BaseModel):
     email: str
     full_name: str | None = None
+    two_factor_enabled: bool = False
+    requires_totp: bool = False  # If True, frontend should show 2FA verification screen
 
 
 class RegisterResponse(BaseModel):
@@ -44,28 +46,33 @@ class RegisterResponse(BaseModel):
 
 @router.post("/register", response_model=RegisterResponse)
 def register(request: RegisterRequest, db: Session = Depends(get_db)):
-    # Check if user already exists
-    existing_user = db.query(user_model.User).filter(user_model.User.email == request.email).first()
+
+    existing_user = db.query(user_model.User).filter(
+        user_model.User.email == request.email
+    ).first()
     if existing_user:
+        raise HTTPException(status_code=400, detail="User with this email already exists")
+
+    # 🔴 PASSWORD CHECK
+    if not security.validate_password(request.password):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists"
+            status_code=400,
+            detail="Password must be at least 8 characters long and include upper, lower, number and special character"
         )
-    
-    # Hash password
+
     hashed_password = security.hash_password(request.password)
-    
-    # Create new user
+
     new_user = user_model.User(
         email=request.email,
         hashed_password=hashed_password,
         full_name=request.full_name,
         is_active=True
     )
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
+
     return RegisterResponse(email=new_user.email, full_name=new_user.full_name)
 
 
@@ -78,11 +85,31 @@ def login(request: LoginRequest, response: Response, db: Session = Depends(get_d
     if not security.verify_password(request.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
+    # If user has 2FA enabled, don't set the main token yet
+    # Frontend should redirect to 2FA verification
+    if user.two_factor_enabled:
+        # Create a temporary token for 2FA verification (valid for 5 minutes)
+        temp_token = jwt_util.create_access_token(user.id, expires_minutes=5)
+        response.set_cookie(
+            key="totp_challenge_token",
+            value=temp_token,
+            httponly=True,
+            secure=settings.SECURE_COOKIE or settings.COOKIE_SAMESITE == "none",
+            samesite=settings.COOKIE_SAMESITE,
+            max_age=5 * 60,
+        )
+        return LoginResponse(
+            email=user.email,
+            full_name=user.full_name,
+            two_factor_enabled=True,
+            requires_totp=True
+        )
+
+    # Normal login without 2FA
     token = jwt_util.create_access_token(user.id)
     same_site = settings.COOKIE_SAMESITE
     secure_cookie = settings.SECURE_COOKIE or same_site == "none"
 
-    # Set secure httpOnly cookie containing the access token. Frontend should use credentials: 'include'.
     response.set_cookie(
         key="access_token",
         value=token,
@@ -92,7 +119,78 @@ def login(request: LoginRequest, response: Response, db: Session = Depends(get_d
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
-    return LoginResponse(email=user.email, full_name=user.full_name)
+    return LoginResponse(
+        email=user.email,
+        full_name=user.full_name,
+        two_factor_enabled=False,
+        requires_totp=False
+    )
+
+
+class TOTPVerifyRequest(BaseModel):
+    token: str  # 6-digit code from authenticator
+
+
+@router.post("/verify-totp", response_model=LoginResponse)
+def verify_totp(request: TOTPVerifyRequest, challenge_request: Request, response: Response, db: Session = Depends(get_db)):
+    """Verify TOTP token after successful password login."""
+    import pyotp
+    
+    # Get the temporary challenge token from cookie
+    challenge_token = challenge_request.cookies.get("totp_challenge_token")
+    if not challenge_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No 2FA challenge in progress. Please login first."
+        )
+    
+    try:
+        payload = jwt_util.decode_access_token(challenge_token)
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired 2FA challenge token"
+        )
+    
+    user = db.query(user_model.User).filter(user_model.User.id == user_id).first()
+    if not user or not user.two_factor_enabled or not user.two_factor_secret:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="2FA not properly configured"
+        )
+    
+    # Verify TOTP token
+    totp = pyotp.TOTP(user.two_factor_secret)
+    if not totp.verify(request.token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authenticator code"
+        )
+    
+    # 2FA verified, create main access token
+    token = jwt_util.create_access_token(user.id)
+    same_site = settings.COOKIE_SAMESITE
+    secure_cookie = settings.SECURE_COOKIE or same_site == "none"
+    
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=secure_cookie,
+        samesite=same_site,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+    
+    # Clear challenge token
+    response.delete_cookie("totp_challenge_token", samesite=same_site, secure=secure_cookie)
+    
+    return LoginResponse(
+        email=user.email,
+        full_name=user.full_name,
+        two_factor_enabled=True,
+        requires_totp=False
+    )
 
 
 @router.post("/logout")

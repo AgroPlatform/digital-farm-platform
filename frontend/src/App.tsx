@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import { login as apiLogin, register as apiRegister } from './api/auth';
-import client, { setUnauthorizedHandler } from './api/client';
+import * as client from './api/client';
+import { setUnauthorizedHandler } from './api/client';
+import * as totpApi from './api/totp';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Weather from './components/pages/Weather';
@@ -11,6 +13,7 @@ import Crops from './components/pages/Crops';
 import Fields from './components/pages/Fields';
 import Settings from './components/pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
+import { TwoFactorModal } from './components/pages/TwoFactorModal';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
@@ -23,6 +26,10 @@ function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  
+  // 2FA state
+  const [requiresTOTP, setRequiresToTP] = useState(false);
+  const [totpEmail, setTotpEmail] = useState('');
   
   // Register state
   const [registerEmail, setRegisterEmail] = useState('');
@@ -47,6 +54,15 @@ function App() {
     try {
       const data = await apiLogin(email, password);
       console.log('Logged in user:', data);
+      
+      // Check if 2FA is required
+      if (data.requires_totp) {
+        setTotpEmail(data.email);
+        setRequiresToTP(true);
+        // Don't clear password yet - might be needed for 2FA verification
+        return;
+      }
+      
       setUser({ email: data.email, full_name: data.full_name });
       setIsAuthenticated(true);
       // Clear form
@@ -55,6 +71,25 @@ function App() {
     } catch (err: any) {
       console.error('Login failed', err);
       toast.error(err?.message || 'Login mislukt');
+    }
+  };
+
+  const handleVerifyTOTP = async (code: string) => {
+    try {
+      const data = await totpApi.verifyTOTPLogin(code);
+      setUser({ email: data.email, full_name: data.full_name });
+      setIsAuthenticated(true);
+      setRequiresToTP(false);
+      setTotpEmail('');
+      
+      // Clear form
+      setEmail('');
+      setPassword('');
+      
+      toast.success('Succesvol ingelogd!');
+    } catch (err: any) {
+      console.error('2FA verification failed', err);
+      throw new Error(err.message || '2FA verification failed');
     }
   };
 
@@ -382,6 +417,16 @@ function App() {
           element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />}
         />
       </Routes>
+      
+      <TwoFactorModal
+        isOpen={requiresTOTP}
+        onClose={() => {
+          setRequiresToTP(false);
+          setTotpEmail('');
+        }}
+        onVerify={handleVerifyTOTP}
+      />
+      
       <ToastContainer position="top-right" autoClose={4000} theme="colored" />
     </BrowserRouter>
   );

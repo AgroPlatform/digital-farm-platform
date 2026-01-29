@@ -6,9 +6,13 @@ from app.core.config import settings
 from app.db import models as db_models
 
 
-def create_access_token(subject: str | int) -> str:
+def create_access_token(subject: str | int, expires_minutes: int | None = None) -> str:
     """Create a JWT access token including a unique `jti` claim."""
-    expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    if expires_minutes is not None:
+        expire = datetime.utcnow() + timedelta(minutes=expires_minutes)
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    
     jti = str(uuid.uuid4())
     to_encode = {"sub": str(subject), "exp": expire, "jti": jti}
     encoded = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
