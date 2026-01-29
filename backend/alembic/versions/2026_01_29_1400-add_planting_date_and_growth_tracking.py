@@ -12,7 +12,7 @@ from datetime import datetime
 
 # revision identifiers, used by Alembic.
 revision = 'add_growth_tracking_001'
-down_revision = None
+down_revision = 'bcd234'
 branch_labels = None
 depends_on = None
 
