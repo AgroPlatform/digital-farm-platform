@@ -836,3 +836,91 @@
     padding: 28px;
   }
 }
+/* Base layout is desktop-first, no change needed */
+
+/* Mobile & small screens: stack all blocks vertically */
+@media (max-width: 992px) {
+  .weather-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+
+  .current-weather-card,
+  .forecast-card,
+  .alerts-card,
+  .locations-card,
+  .tips-card,
+  .history-card,
+  .insights-card {
+    grid-column: span 1 !important;
+    width: 100%;
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Search bar full width */
+  .search-and-field-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .search-wrapper,
+  .search-input {
+    width: 100%;
+  }
+
+  .temp-display {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .temp-icon {
+    font-size: 3rem;
+  }
+
+  .temp-main {
+    font-size: 2.5rem;
+  }
+
+  .temp-feels {
+    font-size: 1rem;
+  }
+
+  .forecast-item,
+  .tip-item,
+  .alert-item,
+  .location-item,
+  .history-stat {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .forecast-list,
+  .tips-list,
+  .alerts-list,
+  .locations-list,
+  .history-stats,
+  .insights-grid {
+    gap: 12px;
+  }
+
+  .forecast-item {
+    grid-template-columns: 1fr !important;
+  }
+}
