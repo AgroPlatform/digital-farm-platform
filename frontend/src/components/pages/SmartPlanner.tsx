@@ -17,6 +17,102 @@ interface Advice {
   fieldInfo: Field;
 }
 
+function getWeatherBlockingAdvice(weather: WeatherData): string | null {
+  if (weather.temp <= 2) {
+    return "❄️ Vorstgevaar – vermijd veldwerk";
+  }
+
+  if (weather.wind >= 40) {
+    return "🌪️ Te veel wind – niet sproeien of bemesten";
+  }
+
+  if (
+    weather.condition.toLowerCase().includes("regen") ||
+    weather.condition.toLowerCase().includes("rain")
+  ) {
+    return "🌧️ Regen verwacht – geen irrigatie nodig";
+  }
+
+  return null;
+}
+
+function getCropAdvice(crop: string, weather: WeatherData): string[] {
+  const advice: string[] = [];
+
+  switch (crop) {
+    case "Aardappelen":
+      if (weather.humidity > 80)
+        advice.push("🥔 Hoog risico op Phytophthora: inspecteer knollen en overweeg bespuiting");
+      if (weather.temp < 8)
+        advice.push("🥔 Groei vertraagd door koude: plan activiteiten die gevoelig zijn voor lage temperatuur");
+      if (weather.temp > 25)
+        advice.push("🥔 Hittestress: controleer bodemvocht en geef indien nodig irrigatie");
+      break;
+
+    case "Tarwe":
+      if (weather.humidity > 85)
+        advice.push("🌾 Bladziekten mogelijk: inspecteer gewas en overweeg fungicide");
+      if (weather.temp > 12 && weather.temp <= 27)
+        advice.push("🌾 Goede groeicondities: voer standaard verzorging uit");
+      if (weather.temp > 27)
+        advice.push("🌾 Hitte: versneld afrijpingsrisico, oogstplanning in de gaten houden");
+      break;
+
+    case "Maïs":
+      if (weather.temp < 10)
+        advice.push("🌽 Groeistilstand door lage temperatuur: vermijd bemesting of bespuiting die groei stimuleert");
+      if (weather.wind > 25)
+        advice.push("🌽 Sterke wind: stel bespuiting en irrigatie uit");
+      if (weather.temp >= 32)
+        advice.push("🌽 Zeer warm: zorg voor voldoende bodemvocht, controleer planten op stress");
+      break;
+
+    case "Suikerbieten":
+      if (weather.temp > 15 && weather.temp <= 28)
+        advice.push("🍬 Actieve groeifase: blijf irrigatie volgen en controleer gewasontwikkeling");
+      if (weather.temp > 28)
+        advice.push("🍬 Hoge temperaturen: verhoogde kans op stress en lagere suikeropbrengst, irrigatie controleren");
+      if (weather.humidity > 85)
+        advice.push("🍬 Bladschimmel mogelijk: inspecteer bladeren en behandel indien nodig");
+      break;
+
+    case "Gerst":
+      if (weather.humidity > 80)
+        advice.push("🌾 Schimmelrisico: inspecteer gewas en pas fungicide toe indien nodig");
+      if (weather.temp > 27)
+        advice.push("🌾 Hitte: versnelde afrijping, controleer rijpingsstadium voor oogstplanning");
+      break;
+
+    case "Uien":
+      if (weather.humidity > 75)
+        advice.push("🧅 Kans op valse meeldauw: inspecteer bladeren, behandel indien nodig");
+      if (weather.temp > 30)
+        advice.push("🧅 Warm weer: verhoog watergift en vermijd stress op het gewas");
+      break;
+
+    case "Wortelen":
+      if (weather.temp < 7)
+        advice.push("🥕 Trage wortelontwikkeling: pas bemesting en oogstplanning aan");
+      if (weather.temp > 25)
+        advice.push("🥕 Warm weer: verhoog watergift, controleer op droogtestress");
+      break;
+
+    case "Spinazie":
+      if (weather.temp > 20 && weather.temp <= 28)
+        advice.push("🥬 Ideale groei: standaard verzorging uitvoeren");
+      if (weather.temp > 28)
+        advice.push("🥬 Te warm: kans op doorschieten en bladverbranding, irrigatie verhogen");
+      if (weather.humidity > 80)
+        advice.push("🥬 Hoog risico op bladschimmels: inspecteer bladeren en behandel indien nodig");
+      break;
+
+    default:
+      advice.push(`🌱 ${crop}: geen specifieke actie beschikbaar`);
+  }
+
+  return advice;
+}
+
 const SmartPlanner: React.FC = () => {
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +127,6 @@ const SmartPlanner: React.FC = () => {
         const adviceArr: Advice[] = [];
 
         for (let field of fieldsData) {
-          // Default weather object
           let weather: WeatherData = {
             temp: 20,
             condition: "onbekend",
@@ -40,21 +135,17 @@ const SmartPlanner: React.FC = () => {
           };
 
           try {
-            // 1️⃣ Haal eerst de stad van het veld via jouw endpoint
             const cityRes = await fetch(
               `http://localhost:8000/fields/${field.id}/city`,
-              { credentials: "include" } // nodig als backend auth vereist
+              { credentials: "include" }
             );
 
-            let city = "Antwerpen"; // fallback
+            let city = "Antwerpen";
             if (cityRes.ok) {
               const cityJson = await cityRes.json();
               if (cityJson.city) city = cityJson.city;
-            } else {
-              console.warn(`City API returned ${cityRes.status} for field ${field.id}`);
             }
 
-            // 2️⃣ Gebruik de city om weer op te halen
             const weatherRes = await fetch(
               `http://localhost:8000/weather?city=${encodeURIComponent(city)}`,
               { credentials: "include" }
@@ -68,8 +159,6 @@ const SmartPlanner: React.FC = () => {
                 humidity: weatherJson.main?.humidity || 78,
                 wind: Math.round((weatherJson.wind?.speed || 0) * 3.6),
               };
-            } else {
-              console.warn(`Weather API returned ${weatherRes.status} for city ${city}`);
             }
           } catch (err) {
             console.warn(`Weather fetch failed for ${field.name}`, err);
@@ -94,81 +183,92 @@ const SmartPlanner: React.FC = () => {
   }, []);
 
   const generateAdvice = (field: Field, weather: WeatherData) => {
-  let advice = "Geen directe actie nodig";
+    const advices: string[] = [];
 
-  // ❄️ Vorst / zeer koud
-  if (weather.temp <= 3) {
-    advice = "Risico op vorst – vermijd werkzaamheden op het veld";
-  }
+    const weatherBlock = getWeatherBlockingAdvice(weather);
+    if (weatherBlock) advices.push(weatherBlock);
 
-  // 🌫️ Hoge luchtvochtigheid / mist
-  else if (weather.humidity >= 85) {
-    advice = "Hoge luchtvochtigheid – verhoogd risico op schimmels";
-  }
+    if (field.crops && field.crops.length > 0) {
+      field.crops.forEach((crop) => {
+        advices.push(...getCropAdvice(crop, weather));
+      });
+    } else {
+      advices.push("ℹ️ Geen gewassen gekoppeld aan dit veld");
+    }
 
-  // 🌬️ Veel wind
-  else if (weather.wind >= 30) {
-    advice = "Sterke wind – stel sproeien of bemesten uit";
-  }
+    if (advices.length === 0) advices.push("✅ Geen actie nodig");
 
-  // 🌧️ Regen
-  else if (
-    weather.condition.toLowerCase().includes("regen") ||
-    weather.condition.toLowerCase().includes("rain")
-  ) {
-    advice = "Regen verwacht – irrigatie is niet nodig";
-  }
-
-  // ☀️ Warm & droog
-  else if (weather.temp >= 20 && weather.humidity < 60) {
-    advice = "Warm en droog weer – controleer bodemvocht";
-  }
-
-  return {
-    field: field.name,
-    advice,
+    return {
+      field: field.name,
+      advice: advices.join(" • "),
+    };
   };
-};
 
   if (loading)
     return <div className="dashboard-container p-6">Advies laden…</div>;
 
   return (
-  <div className="dashboard-container p-6">
-    <div className="page-header">
-      <h1>📋 Smart Planner</h1>
-      <p>Automatisch veldadvies op basis van actuele weersomstandigheden</p>
-    </div>
+    <div className="dashboard-container p-6">
+      <div className="page-header">
+        <h1>📋 Smart Planner</h1>
+        <p>Automatisch veldadvies op basis van actuele weersomstandigheden</p>
+      </div>
 
-    <div className="smartplanner-flex">
+      {fields.length === 0 ? (
+        <div className="no-fields-message">
+          ℹ️ Geen velden toegevoegd. Voeg eerst een veld toe om advies te ontvangen.
+        </div>
+      ) : (
+        <div className="smartplanner-flex">
+          {adviceList.map((item, idx) => (
+            <div key={idx} className="smartplanner-card">
+              {/* Header */}
+              <div className="card-header">
+                <h3>{item.field}</h3>
+                <span className="status-badge">{item.fieldInfo.status}</span>
+              </div>
 
-      {adviceList.map((item, idx) => (
-        <div key={idx} className="smartplanner-card">
-          {/* Header */}
-          <div className="card-header">
-            <h3>{item.field}</h3>
-            <span className="status-badge">{item.fieldInfo.status}</span>
-          </div>
+              {/* Advice */}
+              <div className="advice-box">
+                <span className="advice-icon">💡</span>
+                <div>
+                  <p className="advice-title">Advies</p>
+                  <div className="advice-text">
+                    {item.advice.split(" • ").map((line, i) => (
+                      <div key={i}>• {line}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
-          {/* Advice */}
-          <div className="advice-box">
-            <span className="advice-icon">💡</span>
-            <div>
-              <p className="advice-title">Advies</p>
-              <p className="advice-text">{item.advice}</p>
-            </div>
-          </div>
+              {/* Weather */}
+              <div className="weather-box">
+                <h4>🌦️ Weer</h4>
+                <div className="weather-row">
+                  <span>{item.weather.condition}</span>
+                  <strong>{item.weather.temp}°C</strong>
+                </div>
+                <div className="weather-details">
+                  <span>💧 {item.weather.humidity}%</span>
+                  <span>💨 {item.weather.wind} km/h</span>
+                </div>
+              </div>
 
-          {/* Weather */}
-          <div className="weather-box">
-            <h4>🌦️ Weer</h4>
-            <div className="weather-row">
-              <span>{item.weather.condition}</span>
-              <strong>{item.weather.temp}°C</strong>
-            </div>
-            <div className="weather-details">
-              <span>💧 {item.weather.humidity}%</span>
-              <span>💨 {item.weather.wind} km/h</span>
+              {/* Field info */}
+              <div className="field-info">
+                <div>
+                  <strong>Grootte:</strong> {item.fieldInfo.size} ha
+                </div>
+                <div>
+                  <strong>Bodem:</strong> {item.fieldInfo.soil_type}
+                </div>
+                <div>
+                  <strong>Laatste gewas:</strong> {item.fieldInfo.last_crop || "—"}
+                </div>
+                <div>
+                  <strong>Volgende actie:</strong> {item.fieldInfo.next_action || "—"}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -179,11 +279,9 @@ const SmartPlanner: React.FC = () => {
             <div><strong>Volgende actie:</strong> {item.fieldInfo.next_action || "—"}</div>
           </div>
         </div>
-      ))}
+      )}
     </div>
-  </div>
-);
+  );
 };
 
-// ✅ Belangrijk: default export
 export default SmartPlanner;
