@@ -47,26 +47,6 @@ class FieldCropDetail(CropSchema):
     planting_date: Optional[date] = None
     area: Optional[float] = None
 
-class FieldResponse(FieldBase):
-    id: int
-    user_id: int
-    progress: int = 0  # Calculated field
-
-    @field_validator('crops', mode='before')
-    @classmethod
-    def convert_crops_to_strings(cls, v):
-        if isinstance(v, list):
-            # If the list contains Crop objects, extract the names
-            if v and hasattr(v[0], 'name'):
-                return [crop.name for crop in v]
-            # If it's already strings, return as is
-            elif v and isinstance(v[0], str):
-                return v
-        return v or []
-
-    class Config:
-        from_attributes = True
-
 
 def calculate_progress(field: Field) -> int:
     """Calculate progress percentage based on planting date and growth days.
@@ -85,6 +65,51 @@ def calculate_progress(field: Field) -> int:
     
     # Cap at 100%
     return min(progress, 100)
+
+
+def attach_progress(field: Field) -> Field:
+    """Attach computed progress to a Field instance for API responses."""
+    field.progress = calculate_progress(field)
+    return field
+
+
+class FieldResponse(FieldBase):
+    id: int
+    user_id: int
+    progress: int = 0  # Calculated field
+
+    @field_validator('crops', mode='before')
+    @classmethod
+    def convert_crops_to_strings(cls, v):
+        if isinstance(v, list):
+            # If the list contains Crop objects, extract the names
+            if v and hasattr(v[0], 'name'):
+                return [crop.name for crop in v]
+            # If it's already strings, return as is
+            elif v and isinstance(v[0], str):
+                return v
+        return v or []
+
+    @classmethod
+    def model_validate(cls, obj, *args, **kwargs):
+        """Override to compute progress from Field object."""
+        # Create dict from Field object
+        data = {}
+        if hasattr(obj, '__dict__'):
+            for key in obj.__dict__:
+                if not key.startswith('_'):
+                    data[key] = getattr(obj, key)
+        else:
+            data = obj
+        
+        # Calculate progress if it's a Field object
+        if hasattr(obj, 'planting_date') and hasattr(obj, 'growth_days'):
+            data['progress'] = calculate_progress(obj)
+        
+        return super().model_validate(data, *args, **kwargs)
+
+    class Config:
+        from_attributes = True
 
 
 class FieldHistoryCreate(BaseModel):
@@ -106,7 +131,8 @@ def get_fields(
     current_user: User = Depends(get_current_user)
 ):
     """Get all fields for the current user."""
-    return db.query(Field).filter(Field.user_id == current_user.id).all()
+    fields = db.query(Field).filter(Field.user_id == current_user.id).all()
+    return [attach_progress(field) for field in fields]
 
 
 @router.get("/{field_id}", response_model=FieldResponse)
@@ -125,7 +151,7 @@ def get_field(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Field not found"
         )
-    return field
+    return attach_progress(field)
 
 
 @router.post("/", response_model=FieldResponse, status_code=status.HTTP_201_CREATED)
@@ -143,7 +169,7 @@ def create_field(
     db.add(db_field)
     db.commit()
     db.refresh(db_field)
-    return db_field
+    return attach_progress(db_field)
 
 
 @router.put("/{field_id}", response_model=FieldResponse)
@@ -168,6 +194,8 @@ def update_field(
         setattr(db_field, key, value)
 
     db.commit()
+    db.refresh(db_field)
+    return attach_progress(db_field)
     db.refresh(db_field)
     db_field.progress = calculate_progress(db_field)
     return db_field
@@ -377,15 +405,15 @@ def add_crop_to_field(
     stmt = field_crop_association.insert().values(
         field_id=field_id,
         crop_id=field_crop.crop_id,
-        planting_date=field_crop.planting_date,
+        planting_date=field_crop.planting_date or date.today(),  # Use today if not provided
         area=new_area
     )
     db.execute(stmt)
     db_field.last_crop = db_crop.name
     
     # Set planting_date and growth_days from the crop
-    if field_crop.planting_date:
-        db_field.planting_date = field_crop.planting_date
+    # Use provided planting_date or default to today
+    db_field.planting_date = field_crop.planting_date or date.today()
     if db_crop.growth_days:
         db_field.growth_days = db_crop.growth_days
     

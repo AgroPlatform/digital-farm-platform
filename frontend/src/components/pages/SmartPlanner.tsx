@@ -270,7 +270,14 @@ const SmartPlanner: React.FC = () => {
                 </div>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* Field info */}
+          <div className="field-info">
+            <div><strong>Grootte:</strong> {item.fieldInfo.size} ha</div>
+            <div><strong>Bodem:</strong> {item.fieldInfo.soil_type}</div>
+            <div><strong>Volgende actie:</strong> {item.fieldInfo.next_action || "—"}</div>
+          </div>
         </div>
       )}
     </div>

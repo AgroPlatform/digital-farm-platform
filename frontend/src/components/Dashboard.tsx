@@ -50,9 +50,10 @@ const Dashboard: React.FC = () => {
   const [dismissedAlerts, setDismissedAlerts] = useState<number[]>([]);
 
   const mapField = (field: ApiField): Field => {
-    const crop = field.last_crop ?? field.crops?.[0] ?? "Onbekend";
+    const crop = field.crops?.[0] ?? "Onbekend";
     const status: Field["status"] = field.status === "inactief" ? "Geoogst" : "Groei";
-    const progress = status === "Geoogst" ? 100 : status === "Groei" ? 60 : 20;
+    // Use the calculated progress from backend (rounded to whole number)
+    const progress = Math.round(field.progress ?? 0);
 
     return {
       id: field.id,
@@ -108,15 +109,6 @@ const Dashboard: React.FC = () => {
               title: "Oogstvoorbereiding nodig",
               message: `Veld "${field.name}" is bijna volgroeid. Begin met voorbereiding voor oogst.`,
               type: "warning",
-              fieldId: field.id,
-            });
-          }
-          if (field.progress < 30) {
-            generatedAlerts.push({
-              id: field.id * 101,
-              title: "Monitoring vereist",
-              message: `Veld "${field.name}" vereist monitoring. Controleer groeiomstandigheden.`,
-              type: "info",
               fieldId: field.id,
             });
           }
