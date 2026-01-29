@@ -44,28 +44,33 @@ class RegisterResponse(BaseModel):
 
 @router.post("/register", response_model=RegisterResponse)
 def register(request: RegisterRequest, db: Session = Depends(get_db)):
-    # Check if user already exists
-    existing_user = db.query(user_model.User).filter(user_model.User.email == request.email).first()
+
+    existing_user = db.query(user_model.User).filter(
+        user_model.User.email == request.email
+    ).first()
     if existing_user:
+        raise HTTPException(status_code=400, detail="User with this email already exists")
+
+    # 🔴 PASSWORD CHECK
+    if not security.validate_password(request.password):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists"
+            status_code=400,
+            detail="Password must be at least 8 characters long and include upper, lower, number and special character"
         )
-    
-    # Hash password
+
     hashed_password = security.hash_password(request.password)
-    
-    # Create new user
+
     new_user = user_model.User(
         email=request.email,
         hashed_password=hashed_password,
         full_name=request.full_name,
         is_active=True
     )
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
+
     return RegisterResponse(email=new_user.email, full_name=new_user.full_name)
 
 
