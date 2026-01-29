@@ -113,6 +113,14 @@ function getCropAdvice(crop: string, weather: WeatherData): string[] {
   return advice;
 }
 
+function extractCity(address?: string): string | null {
+  if (!address) return null;
+  const parts = address.split(",").map((part) => part.trim()).filter(Boolean);
+  if (parts.length === 0) return null;
+  const lastPart = parts[parts.length - 1];
+  return lastPart || null;
+}
+
 const SmartPlanner: React.FC = () => {
   const rawApiUrl = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
   const apiBaseUrl = rawApiUrl.replace(/\/+$/, "");
@@ -137,21 +145,15 @@ const SmartPlanner: React.FC = () => {
           };
 
           try {
-            const cityRes = await fetch(
-              `${apiBaseUrl}/fields/${field.id}/city`,
-              { credentials: "include" }
-            );
+            const city = extractCity(field.address) || "Antwerpen";
+            const weatherUrl =
+              field.lat != null && field.lng != null
+                ? `${apiBaseUrl}/weather?lat=${field.lat}&lng=${field.lng}`
+                : `${apiBaseUrl}/weather?city=${encodeURIComponent(city)}`;
 
-            let city = "Antwerpen";
-            if (cityRes.ok) {
-              const cityJson = await cityRes.json();
-              if (cityJson.city) city = cityJson.city;
-            }
-
-            const weatherRes = await fetch(
-              `${apiBaseUrl}/weather?city=${encodeURIComponent(city)}`,
-              { credentials: "include" }
-            );
+            const weatherRes = await fetch(weatherUrl, {
+              credentials: "include",
+            });
 
             if (weatherRes.ok) {
               const weatherJson = await weatherRes.json();
