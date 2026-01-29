@@ -14,6 +14,10 @@ class User(Base):
     job_title = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # 2FA fields
+    two_factor_enabled = Column(Boolean, default=False, nullable=False)
+    two_factor_secret = Column(String(255), nullable=True)  # Base32-encoded secret for TOTP
 
     # Relationships
     fields = relationship("Field", back_populates="user", cascade="all, delete-orphan")

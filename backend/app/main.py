@@ -10,6 +10,7 @@ from app.api.routes import user as user_router
 from app.api.routes import weather as weather_router
 from app.api.routes import fields as fields_router
 from app.api.routes import crops as crops_router
+from app.api.routes import totp as totp_router
 import app.models  # noqa: F401
 
 app = FastAPI(
@@ -38,6 +39,8 @@ app.include_router(user_router.router)
 app.include_router(fields_router.router)
 app.include_router(weather_router.router)
 app.include_router(crops_router.router, prefix="/crops", tags=["Crops"])
+app.include_router(totp_router.router)
+
 
 
 @app.on_event("startup")

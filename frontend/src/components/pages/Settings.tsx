@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './Settings.css';
 import * as userApi from '../../api/user';
+import * as totpApi from '../../api/totp';
+import { TwoFactorModal } from './TwoFactorModal';
+import { TwoFactorSetupModal } from './TwoFactorSetup';
 
 const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('account');
@@ -17,9 +20,19 @@ const Settings: React.FC = () => {
     confirm_password: '',
   });
 
+  // 2FA state
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
+  const [showTwoFactorVerify, setShowTwoFactorVerify] = useState(false);
+  const [qrCode, setQrCode] = useState('');
+  const [secret, setSecret] = useState('');
+  const [twoFactorPassword, setTwoFactorPassword] = useState('');
+  const [disableToken, setDisableToken] = useState('');
+
   // Load user profile on mount
   useEffect(() => {
     loadProfile();
+    loadTwoFactorStatus();
   }, []);
 
   const loadProfile = async () => {
@@ -28,6 +41,88 @@ const Settings: React.FC = () => {
       setProfile(data);
     } catch (err) {
       console.error('Failed to load profile:', err);
+    }
+  };
+
+  const loadTwoFactorStatus = async () => {
+    try {
+      const data = await totpApi.getTOTPStatus();
+      setTwoFactorEnabled(data.two_factor_enabled);
+    } catch (err) {
+      console.error('Failed to load 2FA status:', err);
+    }
+  };
+
+  const handleStartTwoFactorSetup = async () => {
+    if (!twoFactorPassword) {
+      setError('Voer uw wachtwoord in');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await totpApi.setupTOTP(twoFactorPassword);
+      setQrCode(data.qr_code);
+      setSecret(data.secret);
+      setShowTwoFactorSetup(true);
+      // Keep password for verification step
+      // setTwoFactorPassword(''); 
+    } catch (err: any) {
+      setError(err.message || 'Failed to setup 2FA');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyTwoFactor = async (code: string) => {
+    if (!secret || !twoFactorPassword) {
+      throw new Error('Setup information (password/secret) missing. Please restart setup.');
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await totpApi.verifyTOTP(twoFactorPassword, secret, code);
+      setSuccess('2FA successfully enabled!');
+      setShowTwoFactorSetup(false);
+      setQrCode('');
+      setSecret('');
+      setTwoFactorPassword('');
+      setTwoFactorEnabled(true);
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to verify code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDisableTwoFactor = async () => {
+    if (!twoFactorPassword) {
+      setError('Voer uw wachtwoord in');
+      return;
+    }
+    if (!disableToken) {
+      setError('Voer uw authenticator code in');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await totpApi.disableTOTP(twoFactorPassword, disableToken);
+      setSuccess('2FA successfully disabled!');
+      setTwoFactorPassword('');
+      setDisableToken('');
+      setTwoFactorEnabled(false);
+      setShowTwoFactorVerify(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to disable 2FA');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -231,20 +326,128 @@ const Settings: React.FC = () => {
 
               <div className="settings-card">
                 <h3>Twee-Factor Authenticatie</h3>
-                <p>Extra beveiliging voor uw account (binnenkort beschikbaar)</p>
-                <div className="toggle-setting">
-                  <span>2FA Inschakelen</span>
-                  <label className="toggle">
-                    <input type="checkbox" disabled />
-                    <span className="slider"></span>
-                  </label>
-                </div>
+                <p>Beveiliging: Voer extra verificatie in met uw authenticator app</p>
+                
+                {twoFactorEnabled ? (
+                  <div className="security-status enabled">
+                    <span className="status-badge">✅ Ingeschakeld</span>
+                    <p>Uw account is beveiligd met twee-factor authenticatie.</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowTwoFactorVerify(true)}
+                      className="btn-disable-2fa"
+                      disabled={loading}
+                    >
+                      2FA Uitschakelen
+                    </button>
+                  </div>
+                ) : (
+                  <div className="security-status disabled">
+                    <span className="status-badge">⚠️ Uitgeschakeld</span>
+                    <p>Voeg twee-factor authenticatie toe voor betere beveiliging.</p>
+                    
+                    {!showTwoFactorSetup && (
+                      <div className="form-group">
+                        <label>Wachtwoord ter Bevestiging</label>
+                        <input
+                          type="password"
+                          placeholder="Voer uw wachtwoord in"
+                          value={twoFactorPassword}
+                          onChange={(e) => setTwoFactorPassword(e.target.value)}
+                          disabled={loading}
+                        />
+                      </div>
+                    )}
+
+                    {!showTwoFactorSetup ? (
+                      <button
+                        type="button"
+                        onClick={handleStartTwoFactorSetup}
+                        className="btn-enable-2fa"
+                        disabled={loading || !twoFactorPassword}
+                      >
+                        {loading ? 'Bezig...' : '2FA Inschakelen'}
+                      </button>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* Disable 2FA Modal */}
+                {showTwoFactorVerify && (
+                  <div className="modal-overlay">
+                    <div className="modal-content">
+                      <h3>Twee-Factor Authenticatie Uitschakelen</h3>
+                      <p>Voer uw gegevens in om 2FA uit te schakelen:</p>
+                      
+                      {error && <div className="error-message">{error}</div>}
+                      
+                      <div className="form-group">
+                        <label>Wachtwoord</label>
+                        <input
+                          type="password"
+                          placeholder="Uw wachtwoord"
+                          value={twoFactorPassword}
+                          onChange={(e) => setTwoFactorPassword(e.target.value)}
+                          disabled={loading}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Authenticator Code</label>
+                        <input
+                          type="text"
+                          placeholder="000000"
+                          maxLength={6}
+                          value={disableToken}
+                          onChange={(e) => setDisableToken(e.target.value.replace(/\D/g, ''))}
+                          disabled={loading}
+                        />
+                      </div>
+
+                      <div className="modal-actions">
+                        <button
+                          onClick={() => {
+                            setShowTwoFactorVerify(false);
+                            setTwoFactorPassword('');
+                            setDisableToken('');
+                            setError(null);
+                          }}
+                          className="btn-cancel"
+                          disabled={loading}
+                        >
+                          Annuleren
+                        </button>
+                        <button
+                          onClick={handleDisableTwoFactor}
+                          className="btn-danger"
+                          disabled={loading || !twoFactorPassword || disableToken.length !== 6}
+                        >
+                          {loading ? 'Bezig...' : 'Uitschakelen'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
         </div>
       </div>
+
+      <TwoFactorSetupModal
+        isOpen={showTwoFactorSetup}
+        qrCode={qrCode}
+        secret={secret}
+        onVerify={handleVerifyTwoFactor}
+        onCancel={() => {
+          setShowTwoFactorSetup(false);
+          setQrCode('');
+          setSecret('');
+          setTwoFactorPassword('');
+        }}
+        loading={loading}
+      />
     </div>
   );
 };
