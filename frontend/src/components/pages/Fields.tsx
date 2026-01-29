@@ -47,7 +47,6 @@ interface Field {
   soilType: string;
   crops: string[];
   status: 'actief' | 'inactief';
-  lastCrop: string;
   nextAction: string;
   address: string;
   lat?: number;
@@ -103,7 +102,6 @@ const Fields: React.FC = () => {
     soilType: string;
     crops: string[];
     status: 'actief' | 'inactief';
-    lastCrop: string;
     nextAction: string;
     address: string;
     lat?: number;
@@ -114,7 +112,6 @@ const Fields: React.FC = () => {
     soilType: 'Klei',
     crops: [],
     status: 'actief',
-    lastCrop: '',
     nextAction: '',
     address: '',
   });
@@ -228,7 +225,6 @@ const Fields: React.FC = () => {
         soilType: f.soil_type,
         crops: f.crops || [],
         status: f.status as 'actief' | 'inactief',
-        lastCrop: f.last_crop || '-',
         nextAction: f.next_action || 'Plannen',
         address: f.address || 'Limburg, België',
         lat: f.lat,
@@ -255,7 +251,6 @@ const Fields: React.FC = () => {
         soil_type: field.soilType,
         crops: field.crops,
         status: newStatus,
-        last_crop: field.lastCrop,
         next_action: field.nextAction,
         address: field.address,
         lat: field.lat,
@@ -284,7 +279,6 @@ const Fields: React.FC = () => {
         soilType: fieldToEdit.soilType,
         crops: [...fieldToEdit.crops],
         status: fieldToEdit.status as 'actief' | 'inactief',
-        lastCrop: fieldToEdit.lastCrop,
         nextAction: fieldToEdit.nextAction,
         address: fieldToEdit.address || '',
         lat: fieldToEdit.lat,
@@ -307,7 +301,6 @@ const Fields: React.FC = () => {
         soil_type: newField.soilType,
         crops: newField.crops,
         status: newField.status,
-        last_crop: newField.lastCrop,
         next_action: newField.nextAction,
         address: newField.address,
         lat: newField.lat,
@@ -321,7 +314,6 @@ const Fields: React.FC = () => {
         soilType: 'Klei',
         crops: [],
         status: 'actief',
-        lastCrop: '',
         nextAction: '',
         address: '',
       });
@@ -357,7 +349,6 @@ const Fields: React.FC = () => {
         soil_type: newField.soilType,
         crops: newField.crops,
         status: newField.status,
-        last_crop: newField.lastCrop,
         next_action: newField.nextAction,
         address: newField.address,
         lat: newField.lat,
@@ -371,7 +362,6 @@ const Fields: React.FC = () => {
         soilType: 'Klei',
         crops: [],
         status: 'actief',
-        lastCrop: '',
         nextAction: '',
         address: '',
       });
@@ -394,7 +384,6 @@ const Fields: React.FC = () => {
         soil_type: selectedFieldData.soilType,
         crops: selectedFieldData.crops,
         status: selectedFieldData.status,
-        last_crop: selectedFieldData.lastCrop,
         next_action: nextActionDraft,
         address: selectedFieldData.address,
         lat: selectedFieldData.lat,
@@ -416,7 +405,6 @@ const Fields: React.FC = () => {
       soilType: 'Klei',
       crops: [],
       status: 'actief',
-      lastCrop: '',
       nextAction: '',
       address: '',
     });
@@ -724,11 +712,6 @@ const Fields: React.FC = () => {
                       <span className="info-desc">📍 Locatie</span>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Laatste Gewas</span>
-                      <span className="info-value">{selectedFieldData.lastCrop}</span>
-                      <span className="info-desc">🌾 Vorige teelt</span>
-                    </div>
-                    <div className="info-item">
                       <span className="info-label">Laatste Activiteit</span>
                       <span className="info-value">
                         {latestActivity ? `${latestActivity.activity_type} (${getCropNameById(latestActivity.crop_id)})` : '-'}
@@ -902,7 +885,6 @@ const Fields: React.FC = () => {
                 </div>
                 <div className="field-actions">
                   <div className="action-info">
-                    <span className="last-crop">📅 {field.lastCrop}</span>
                     <span className="next-action">⚡ {field.nextAction}</span>
                   </div>
                   <div className="action-buttons">
@@ -946,11 +928,6 @@ const Fields: React.FC = () => {
                 <span className="info-label">Adres</span>
                 <span className="info-value">{selectedFieldData.address}</span>
                 <span className="info-desc">📍 Locatie</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Laatste Gewas</span>
-                <span className="info-value">{selectedFieldData.lastCrop}</span>
-                <span className="info-desc">🌾 Vorige teelt</span>
               </div>
               <div className="info-item">
                 <span className="info-label">Laatste Activiteit</span>
@@ -1231,22 +1208,6 @@ const Fields: React.FC = () => {
                   )}
                 </div>
                 <p className="form-hint">Typ minimaal 3 karakters voor suggesties</p>
-              </div>
-              <div className="form-group">
-                <label>Laatste Gewas</label>
-                <select
-                  value={newField.lastCrop}
-                  onChange={(e) => setNewField({...newField, lastCrop: e.target.value})}
-                >
-                  <option value="">Geen</option>
-                  {newField.lastCrop && !availableCrops.some(crop => crop.name === newField.lastCrop) && (
-                    <option value={newField.lastCrop}>{newField.lastCrop}</option>
-                  )}
-                  {availableCrops.map(crop => (
-                    <option key={crop.id} value={crop.name}>{crop.name}</option>
-                  ))}
-                </select>
-                <p className="form-hint">Optioneel. Kies een gewas uit de lijst.</p>
               </div>
               <div className="form-group">
                 <label>Volgende Actie *</label>

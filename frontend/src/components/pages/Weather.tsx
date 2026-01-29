@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./Weather.css";
 import * as fieldsApi from "../../api/fields";
 
@@ -19,6 +19,7 @@ const Weather: React.FC = () => {
   const [forecast, setForecast] = useState<any[]>([]);
   const [fields, setFields] = useState<any[]>([]);
   const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
+  const latestRequestId = useRef(0);
 
   // OSM search state
   const [query, setQuery] = useState("");
@@ -67,15 +68,20 @@ const Weather: React.FC = () => {
   };
 
   async function fetchWeather(selectedCity: string) {
+    const normalizedCity = selectedCity.trim();
+    if (!normalizedCity) return;
+    const requestId = ++latestRequestId.current;
     setLoading(true);
     try {
       const [currentRes, forecastRes] = await Promise.all([
-        fetch(`http://localhost:8000/weather?city=${selectedCity}`),
-        fetch(`http://localhost:8000/weather/forecast?city=${selectedCity}`),
+        fetch(`http://localhost:8000/weather?city=${normalizedCity}`),
+        fetch(`http://localhost:8000/weather/forecast?city=${normalizedCity}`),
       ]);
 
       const data = await currentRes.json();
       const forecastData = await forecastRes.json();
+
+      if (requestId !== latestRequestId.current) return;
 
       setWeather({
         current: {
@@ -95,11 +101,14 @@ const Weather: React.FC = () => {
 
       buildForecast(forecastData);
 
-      setCity(selectedCity);
+      setCity(normalizedCity);
     } catch (err) {
+      if (requestId !== latestRequestId.current) return;
       console.error("Weather fetch failed", err);
     }
-    setLoading(false);
+    if (requestId === latestRequestId.current) {
+      setLoading(false);
+    }
   }
 
   // OSM search function
@@ -164,6 +173,7 @@ const Weather: React.FC = () => {
     const id = Number.parseInt(value, 10);
     if (Number.isNaN(id)) return;
     setSelectedFieldId(id);
+    setShowSuggestions(false);
     const field = fields.find((f) => f.id === id);
     const nextCity = field?.address?.split(",")[0] || field?.name || "";
     if (nextCity) {
