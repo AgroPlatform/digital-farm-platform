@@ -1,0 +1,3 @@
+# This directory is kept empty
+# Database schema is automatically created from SQLAlchemy models
+# No migrations needed - Base.metadata.create_all() handles everything
