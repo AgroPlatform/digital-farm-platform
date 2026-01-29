@@ -270,6 +270,8 @@ const SmartPlanner: React.FC = () => {
           </div>
         </div>
       ))}
+        </div>
+      )}
     </div>
   );
 };
