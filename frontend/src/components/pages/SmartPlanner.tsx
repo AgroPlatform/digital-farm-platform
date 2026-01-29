@@ -114,6 +114,8 @@ function getCropAdvice(crop: string, weather: WeatherData): string[] {
 }
 
 const SmartPlanner: React.FC = () => {
+  const rawApiUrl = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
+  const apiBaseUrl = rawApiUrl.replace(/\/+$/, "");
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(true);
   const [adviceList, setAdviceList] = useState<Advice[]>([]);
@@ -136,7 +138,7 @@ const SmartPlanner: React.FC = () => {
 
           try {
             const cityRes = await fetch(
-              `http://localhost:8000/fields/${field.id}/city`,
+              `${apiBaseUrl}/fields/${field.id}/city`,
               { credentials: "include" }
             );
 
@@ -147,7 +149,7 @@ const SmartPlanner: React.FC = () => {
             }
 
             const weatherRes = await fetch(
-              `http://localhost:8000/weather?city=${encodeURIComponent(city)}`,
+              `${apiBaseUrl}/weather?city=${encodeURIComponent(city)}`,
               { credentials: "include" }
             );
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import './Dashboard.css';
 
@@ -9,7 +9,8 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ onLogout, user }) => {
   const location = useLocation();
-  
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const getActiveMenu = () => {
     const path = location.pathname;
     if (path === '/' || path === '/dashboard') return 'dashboard';
@@ -23,14 +24,11 @@ const Layout: React.FC<LayoutProps> = ({ onLogout, user }) => {
   
   const activeMenu = getActiveMenu();
 
-  // Generate initials from user's full name or email
   const getInitials = () => {
     if (user?.full_name) {
       return user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
     }
-    if (user?.email) {
-      return user.email.substring(0, 2).toUpperCase();
-    }
+    if (user?.email) return user.email.substring(0, 2).toUpperCase();
     return 'JD';
   };
 
@@ -42,52 +40,43 @@ const Layout: React.FC<LayoutProps> = ({ onLogout, user }) => {
 
   return (
     <div className="dashboard-container">
-      {/* Top Navbar with Horizontal Navigation */}
       <nav className="navbar-horizontal">
         <div className="navbar-brand">
           <span className="logo-icon">🌱</span>
           <h1 className="logo-text">Agro Dashboard</h1>
         </div>
-        
-        <div className="navbar-menu">
-          <Link 
-            to="/dashboard" 
-            className={`nav-link ${activeMenu === 'dashboard' ? 'active' : ''}`}
-          >
+
+        {/* Hamburger button */}
+        <div 
+          className={`hamburger ${menuOpen ? 'open' : ''}`} 
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+
+        <div className={`navbar-menu ${menuOpen ? 'show' : ''}`}>
+          <Link to="/dashboard" className={`nav-link ${activeMenu === 'dashboard' ? 'active' : ''}`}>
             📊 Dashboard
           </Link>
-          <Link 
-            to="/weather" 
-            className={`nav-link ${activeMenu === 'weather' ? 'active' : ''}`}
-          >
+          <Link to="/weather" className={`nav-link ${activeMenu === 'weather' ? 'active' : ''}`}>
             🌤️ Weer
           </Link>
-          <Link 
-            to="/smart-planner" 
-            className={`nav-link ${activeMenu === 'smart-planner' ? 'active' : ''}`}
-          >
+          <Link to="/smart-planner" className={`nav-link ${activeMenu === 'smart-planner' ? 'active' : ''}`}>
             🧠 Slimme Planner
           </Link>
-          <Link 
-            to="/crops" 
-            className={`nav-link ${activeMenu === 'crops' ? 'active' : ''}`}
-          >
+          <Link to="/crops" className={`nav-link ${activeMenu === 'crops' ? 'active' : ''}`}>
             🌽 Gewassen
           </Link>
-          <Link 
-            to="/fields" 
-            className={`nav-link ${activeMenu === 'fields' ? 'active' : ''}`}
-          >
+          <Link to="/fields" className={`nav-link ${activeMenu === 'fields' ? 'active' : ''}`}>
             🌾 Velden
           </Link>
-          <Link 
-            to="/settings" 
-            className={`nav-link ${activeMenu === 'settings' ? 'active' : ''}`}
-          >
+          <Link to="/settings" className={`nav-link ${activeMenu === 'settings' ? 'active' : ''}`}>
             ⚙️ Instellingen
           </Link>
         </div>
-        
+
         <div className="navbar-actions">
           <div className="user-profile" onClick={onLogout} style={{ cursor: 'pointer' }} title="Uitloggen">
             <div className="avatar">{getInitials()}</div>
@@ -99,7 +88,6 @@ const Layout: React.FC<LayoutProps> = ({ onLogout, user }) => {
         </div>
       </nav>
 
-      {/* Main Content - Full Width */}
       <main className="main-content-full">
         <Outlet />
       </main>

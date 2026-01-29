@@ -707,54 +707,254 @@
   font-weight: 700;
 }
 
-/* Responsive */
-@media (max-width: 1600px) {
-  .crops-list-card {
-    grid-column: span 5;
-  }
-  .crop-details-card {
-    grid-column: span 7;
-  }
+* Crop Details Card */
+.crop-details-card {
+  grid-column: span 8;
+  background: white;
+  border-radius: 24px;
+  padding: 0;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  height: 800px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-@media (max-width: 1400px) {
-  .crop-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .requirements-list {
-    grid-template-columns: 1fr;
-  }
+.crop-detail-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  padding: 32px 40px;
+  border-bottom: 2px solid #f1f3f5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
+
+.crop-detail-content {
+  padding: 32px 40px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.crop-title h2 {
+  font-size: 3rem;
+  color: #1a1a1a;
+  margin: 0 0 16px 0;
+  font-weight: 800;
+}
+
+.crop-status {
+  padding: 8px 20px;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.crop-status.actief {
+  background: #e8f5e9;
+  color: #2E7D32;
+  border: 1px solid #a5d6a7;
+}
+
+.crop-status.inactief {
+  background: #f1f3f5;
+  color: #636e72;
+  border: 1px solid #dee2e6;
+}
+
+/* ---------------------------- */
+/* Responsive Fixes             */
+/* ---------------------------- */
 
 @media (max-width: 1100px) {
-  .crops-grid {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .crops-list-card, .crop-details-card {
-    width: 100%;
-    grid-column: span 12;
+  .crop-details-card {
     height: auto;
     min-height: 500px;
   }
-  
-  .recommendations-list {
-    grid-template-columns: 1fr;
-  }
-  
-  .filters-section {
+
+  .crop-detail-header {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 24px 20px;
   }
-  
-  .filters-container {
+
+  .crop-detail-content {
+    padding: 24px 20px;
+  }
+}
+
+/* ============================ */
+/* Mobile Styles (Max-width: 768px) */
+/* ============================ */
+
+@media (max-width: 768px) {
+
+  /* --- Verberg onderdelen die niet nodig zijn op mobiel --- */
+  .filters-section,
+  .recommendations-card,
+  .stats-row,
+  .crop-requirements,
+  .crop-tips {
+    display: none !important;
+  }
+
+  /* --- Crops Grid Stapelen --- */
+  .crops-grid {
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
+    gap: 24px;
   }
-  
-  .search-wrapper {
-    width: 100%;
+
+  /* --- Crop List Card --- */
+  .crops-list-card {
+    grid-column: span 12;
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
   }
+
+  /* --- Crop Details Card --- */
+  .crop-details-card {
+    grid-column: span 12;
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    height: auto;
+    min-height: auto;
+  }
+  /* ============================ */
+/* Mobile Styles (Max-width: 768px) */
+/* ============================ */
+
+@media (max-width: 768px) {
+
+  /* --- Verberg onderdelen die niet nodig zijn op mobiel --- */
+  .filters-section,
+  .recommendations-card,
+  .stats-row,
+  .crop-requirements,
+  .crop-tips {
+    display: none !important;
+  }
+
+  /* --- Crops Grid Stapelen --- */
+  .crops-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* --- Crop List Card --- */
+  .crops-list-card {
+    grid-column: span 12;
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+
+  /* --- Crop Details Card --- */
+  .crop-details-card {
+    grid-column: span 12;
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    height: auto;
+    min-height: auto;
+  }
+
+  /* --- Crop detail header compact --- */
+  .crop-detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  /* --- Crop content padding --- */
+  .crop-detail-content {
+    padding: 12px 16px;
+  }
+
+  /* --- Crop header groot (icon + titel) --- */
+  .crop-header-large {
+    display: flex;
+    flex-direction: column; /* icon onder titel */
+    align-items: center;    /* centreren */
+    gap: 12px;
+  }
+
+  /* --- Icon kleiner --- */
+  .crop-icon-large {
+    font-size: 3rem; /* pas aan naar wens */
+  }
+
+  /* --- Titel centreren --- */
+  .crop-title {
+    text-align: center;
+  }
+
+  .crop-title h2 {
+    font-size: 2rem; /* mobiel vriendelijk */
+  }
+
+  /* --- Status badge centreren --- */
+  .crop-status {
+    display: inline-block;
+    margin-top: 4px;
+  }
+
+  /* --- Crop stats grid (binnen details) responsive --- */
+  .crop-stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* --- Calendar Card --- */
+  .calendar-card {
+    grid-column: span 12;
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+
+  /* --- Calendar months horizontaal scrollable --- */
+  .calendar-months {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 8px;
+  }
+
+  .calendar-month {
+    min-width: 50px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+
+  /* Calendar crop indicators kleiner maken */
+  .calendar-month .crop-indicator {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* --- Crop list items touch-vriendelijk --- */
+  .crop-item {
+    padding: 12px;
+  }
+
+  .crop-item.selected {
+    border-left: 4px solid #2E7D32;
+  }
+
+  /* --- Extra: responsive fonts voor kleine schermen --- */
+  .crop-stat .stat-label,
+  .crop-stat .stat-value {
+    font-size: 0.9rem;
+  }
+}
 }

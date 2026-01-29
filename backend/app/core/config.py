@@ -30,6 +30,7 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "https://digital-farm-platform.vercel.app",
         "https://digital-farm-platform-eiyg.vercel.app",
+        "https://dev.muckels.com",
     ]
 
     # Security / Auth
@@ -37,6 +38,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     SECURE_COOKIE: bool = False
     COOKIE_SAMESITE: str = "lax"
+    AUTO_MIGRATE: bool = True
 
     @field_validator("COOKIE_SAMESITE")
     def _normalize_cookie_samesite(cls, v: str) -> str:
