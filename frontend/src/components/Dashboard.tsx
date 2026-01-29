@@ -41,6 +41,8 @@ interface Alert {
 }
 
 const Dashboard: React.FC = () => {
+  const rawApiUrl = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
+  const apiBaseUrl = rawApiUrl.replace(/\/+$/, "");
   const [user, setUser] = useState<User | null>(null);
   const [fields, setFields] = useState<Field[]>([]);
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -69,7 +71,7 @@ const Dashboard: React.FC = () => {
     async function loadData() {
       try {
         // 1️⃣ Haal user info op
-        const userRes = await fetch("http://localhost:8000/user/profile", {
+        const userRes = await fetch(`${apiBaseUrl}/user/profile`, {
           credentials: "include",
         });
         const userJson = await userRes.json();
@@ -81,7 +83,7 @@ const Dashboard: React.FC = () => {
         setFields(mappedFields);
 
         // 3️⃣ Haal weer op
-        const weatherRes = await fetch("http://localhost:8000/weather?city=Antwerpen");
+  const weatherRes = await fetch(`${apiBaseUrl}/weather?city=Antwerpen`);
         const weatherJson = await weatherRes.json();
         setWeather({
           temp: Math.round(weatherJson.main.temp),

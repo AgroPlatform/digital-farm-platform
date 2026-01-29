@@ -13,6 +13,8 @@ function mapIcon(main: string) {
 }
 
 const Weather: React.FC = () => {
+  const rawApiUrl = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
+  const apiBaseUrl = rawApiUrl.replace(/\/+$/, "");
   const [city, setCity] = useState("Antwerpen");
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<any>(null);
@@ -74,8 +76,8 @@ const Weather: React.FC = () => {
     setLoading(true);
     try {
       const [currentRes, forecastRes] = await Promise.all([
-        fetch(`http://localhost:8000/weather?city=${normalizedCity}`),
-        fetch(`http://localhost:8000/weather/forecast?city=${normalizedCity}`),
+        fetch(`${apiBaseUrl}/weather?city=${normalizedCity}`),
+        fetch(`${apiBaseUrl}/weather/forecast?city=${normalizedCity}`),
       ]);
 
       const data = await currentRes.json();
