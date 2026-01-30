@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import { login as apiLogin, register as apiRegister } from './api/auth';
 import * as client from './api/client';
-import { setUnauthorizedHandler } from './api/client';
+import { setRequestErrorHandler, setUnauthorizedHandler } from './api/client';
 import * as totpApi from './api/totp';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
@@ -172,6 +172,33 @@ function App() {
 
     return () => {
       setUnauthorizedHandler(null);
+    };
+  }, [clearAuthState]);
+
+  useEffect(() => {
+    let handlingRequestError = false;
+
+    const handleRequestError = (error: Error) => {
+      if (handlingRequestError) {
+        return;
+      }
+
+      if (error.name !== 'NetworkError' && error.name !== 'TimeoutError') {
+        return;
+      }
+
+      handlingRequestError = true;
+      clearAuthState();
+      toast.error(error.message || 'Backend niet bereikbaar');
+      setTimeout(() => {
+        handlingRequestError = false;
+      }, 1000);
+    };
+
+    setRequestErrorHandler(handleRequestError);
+
+    return () => {
+      setRequestErrorHandler(null);
     };
   }, [clearAuthState]);
 

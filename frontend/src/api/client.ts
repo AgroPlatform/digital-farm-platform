@@ -100,6 +100,7 @@ async function request(path: string, options: RequestOptions = {}) {
       }
       if (didTimeout || error.name === "AbortError") {
         const timeoutError = new Error("Verzoek verlopen");
+        timeoutError.name = "TimeoutError";
         if (requestErrorHandler) {
           requestErrorHandler(timeoutError);
         }
@@ -107,6 +108,7 @@ async function request(path: string, options: RequestOptions = {}) {
       }
 
       const networkError = new Error("Backend niet bereikbaar");
+      networkError.name = "NetworkError";
       if (requestErrorHandler) {
         requestErrorHandler(networkError);
       }
@@ -114,6 +116,7 @@ async function request(path: string, options: RequestOptions = {}) {
     }
 
     const fallbackError = new Error("Backend niet bereikbaar");
+    fallbackError.name = "NetworkError";
     if (requestErrorHandler) {
       requestErrorHandler(fallbackError);
     }
