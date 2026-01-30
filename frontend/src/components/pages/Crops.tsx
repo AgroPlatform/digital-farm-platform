@@ -315,37 +315,6 @@ const Crops: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Crop Recommendations */}
-        <div className="recommendations-card">
-          <h3>✨ Aanbevolen Gewassen</h3>
-          <div className="recommendations-list">
-            <div className="recommendation">
-              <div className="rec-icon">🌱</div>
-              <div className="rec-content">
-                <h4>Spinazie voor Noord Akker</h4>
-                <p>Perfect voor korte teelt tussen gewassen</p>
-                <span className="rec-reason">Bodem geschikt voor bladgroenten</span>
-              </div>
-            </div>
-            <div className="recommendation">
-              <div className="rec-icon">💧</div>
-              <div className="rec-content">
-                <h4>Maïs voor Zuid Weide</h4>
-                <p>Hoge waterbehoefte, goede drainage</p>
-                <span className="rec-reason">Zandgrond houdt water vast</span>
-              </div>
-            </div>
-            <div className="recommendation">
-              <div className="rec-icon">📈</div>
-              <div className="rec-content">
-                <h4>Tarwe rotatie</h4>
-                <p>Wissel met aardappelen voor bodemgezondheid</p>
-                <span className="rec-reason">Voorkomt bodemuitputting</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
