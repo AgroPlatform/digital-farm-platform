@@ -454,7 +454,7 @@ const Advice: React.FC = () => {
     if (weather.dataStatus !== "ok") {
       return {
         field: field.name,
-        advice: "⚠️ Geen advies door ontbrekende weerdata",
+        advice: "⚠️ Weerdata niet beschikbaar",
       };
     }
 
@@ -589,15 +589,14 @@ const Advice: React.FC = () => {
                 <span className="advice-icon">💡</span>
                 <div>
                   <p className="advice-title">Advies</p>
-                  {item.weather.dataStatus !== "ok" && (
-                    <div className="advice-warning">
-                      Weerdata niet beschikbaar; advies onvolledig
-                    </div>
-                  )}
                   <div className="advice-text">
-                    {item.advice.split(" • ").map((line, i) => (
-                      <div key={i}>• {line}</div>
-                    ))}
+                    {item.weather.dataStatus !== "ok" ? (
+                      <div>{item.advice}</div>
+                    ) : (
+                      item.advice
+                        .split(" • ")
+                        .map((line: string, i: number) => <div key={i}>• {line}</div>)
+                    )}
                   </div>
                 </div>
               </div>
@@ -605,9 +604,6 @@ const Advice: React.FC = () => {
               {/* Weather */}
               <div className="weather-box">
                 <h4>🌦️ Weer</h4>
-                {item.weather.dataStatus !== "ok" && (
-                  <div className="weather-status warning">⚠️ Weerdata niet beschikbaar</div>
-                )}
                 <div className="weather-row">
                   <span>{item.weather.condition}</span>
                   <strong>
