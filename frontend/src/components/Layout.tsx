@@ -15,7 +15,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout, user }) => {
     const path = location.pathname;
     if (path === '/' || path === '/dashboard') return 'dashboard';
     if (path.startsWith('/weather')) return 'weather';
-    if (path.startsWith('/smart-planner')) return 'smart-planner';
+  if (path.startsWith('/advice')) return 'advice';
     if (path.startsWith('/crops')) return 'crops';
     if (path.startsWith('/fields')) return 'fields';
     if (path.startsWith('/settings')) return 'settings';
@@ -63,8 +63,8 @@ const Layout: React.FC<LayoutProps> = ({ onLogout, user }) => {
           <Link to="/weather" className={`nav-link ${activeMenu === 'weather' ? 'active' : ''}`}>
             🌤️ Weer
           </Link>
-          <Link to="/smart-planner" className={`nav-link ${activeMenu === 'smart-planner' ? 'active' : ''}`}>
-            🧠 Slimme Planner
+          <Link to="/advice" className={`nav-link ${activeMenu === 'advice' ? 'active' : ''}`}>
+            💡 Advies
           </Link>
           <Link to="/crops" className={`nav-link ${activeMenu === 'crops' ? 'active' : ''}`}>
             🌽 Gewassen

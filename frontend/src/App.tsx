@@ -8,7 +8,7 @@ import * as totpApi from './api/totp';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Weather from './components/pages/Weather';
-import SmartPlanner from './components/pages/SmartPlanner';
+import Advice from './components/pages/Advice';
 import Crops from './components/pages/Crops';
 import Fields from './components/pages/Fields';
 import Settings from './components/pages/Settings';
@@ -407,7 +407,7 @@ function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="weather" element={<Weather />} />
-          <Route path="smart-planner" element={<SmartPlanner />} />
+          <Route path="advice" element={<Advice />} />
           <Route path="crops" element={<Crops />} />
           <Route path="fields" element={<Fields />} />
           <Route path="settings" element={<Settings />} />
