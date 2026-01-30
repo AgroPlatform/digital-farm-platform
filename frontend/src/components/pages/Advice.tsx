@@ -3,11 +3,15 @@ import "./Advice.css";
 import * as fieldsApi from "../../api/fields";
 import type { Field } from "../../api/fields";
 
+type WeatherDataStatus = "ok" | "failed" | "stale";
+
 interface WeatherData {
   temp: number;
   condition: string;
   humidity: number;
   wind: number;
+  dataStatus: WeatherDataStatus;
+  timestamp: string;
 }
 
 interface Advice {
@@ -142,6 +146,8 @@ const Advice: React.FC = () => {
             condition: "onbekend",
             humidity: 78,
             wind: 0,
+            dataStatus: "failed",
+            timestamp: new Date().toISOString(),
           };
 
           try {
@@ -162,10 +168,25 @@ const Advice: React.FC = () => {
                 condition: weatherJson.weather?.[0]?.description || "onbekend",
                 humidity: weatherJson.main?.humidity || 78,
                 wind: Math.round((weatherJson.wind?.speed || 0) * 3.6),
+                dataStatus: "ok",
+                timestamp: new Date().toISOString(),
+              };
+            } else {
+              weather = {
+                ...weather,
+                condition: "Niet beschikbaar",
+                dataStatus: "failed",
+                timestamp: new Date().toISOString(),
               };
             }
           } catch (err) {
             console.warn(`Weather fetch failed for ${field.name}`, err);
+            weather = {
+              ...weather,
+              condition: "Niet beschikbaar",
+              dataStatus: "failed",
+              timestamp: new Date().toISOString(),
+            };
           }
 
           adviceArr.push({
@@ -188,6 +209,13 @@ const Advice: React.FC = () => {
 
   const generateAdvice = (field: Field, weather: WeatherData) => {
     const advices: string[] = [];
+
+    if (weather.dataStatus !== "ok") {
+      return {
+        field: field.name,
+        advice: "⚠️ Geen advies door ontbrekende weerdata",
+      };
+    }
 
     const weatherBlock = getWeatherBlockingAdvice(weather);
     if (weatherBlock) advices.push(weatherBlock);
@@ -237,6 +265,11 @@ const Advice: React.FC = () => {
                 <span className="advice-icon">💡</span>
                 <div>
                   <p className="advice-title">Advies</p>
+                  {item.weather.dataStatus !== "ok" && (
+                    <div className="advice-warning">
+                      Weerdata niet beschikbaar; advies onvolledig
+                    </div>
+                  )}
                   <div className="advice-text">
                     {item.advice.split(" • ").map((line, i) => (
                       <div key={i}>• {line}</div>
@@ -248,13 +281,26 @@ const Advice: React.FC = () => {
               {/* Weather */}
               <div className="weather-box">
                 <h4>🌦️ Weer</h4>
+                {item.weather.dataStatus !== "ok" && (
+                  <div className="weather-status warning">⚠️ Weerdata niet beschikbaar</div>
+                )}
                 <div className="weather-row">
                   <span>{item.weather.condition}</span>
-                  <strong>{item.weather.temp}°C</strong>
+                  <strong>
+                    {item.weather.dataStatus === "ok" ? `${item.weather.temp}°C` : "—"}
+                  </strong>
                 </div>
-                <div className="weather-details">
-                  <span>💧 {item.weather.humidity}%</span>
-                  <span>💨 {item.weather.wind} km/h</span>
+                <div
+                  className={`weather-details ${
+                    item.weather.dataStatus === "ok" ? "" : "weather-details-muted"
+                  }`}
+                >
+                  <span>💧 {item.weather.dataStatus === "ok" ? `${item.weather.humidity}%` : "—"}</span>
+                  <span>💨 {item.weather.dataStatus === "ok" ? `${item.weather.wind} km/h` : "—"}</span>
+                </div>
+                <div className="weather-timestamp">
+                  ⏱️ Laatste update:{" "}
+                  {new Date(item.weather.timestamp).toLocaleString("nl-NL")}
                 </div>
               </div>
 
