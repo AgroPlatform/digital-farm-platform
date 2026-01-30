@@ -43,7 +43,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout, user }) => {
       <nav className="navbar-horizontal">
         <div className="navbar-brand">
           <span className="logo-icon">🌱</span>
-          <h1 className="logo-text">Agro Dashboard</h1>
+          <h1 className="logo-text">Agro Platform</h1>
         </div>
 
         {/* Hamburger button */}

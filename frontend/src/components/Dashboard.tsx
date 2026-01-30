@@ -220,7 +220,7 @@ const Dashboard: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <h3 style={{ margin: '0 0 8px 0', fontSize: '1.3rem' }}>🌤️ Huidig Weer</h3>
-              <p style={{ margin: 0, opacity: 0.9 }}>Boerderij De Groene Akker</p>
+              {/* <p style={{ margin: 0, opacity: 0.9 }}>Boerderij De Groene Akker</p> */}
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: '3rem', fontWeight: '800', lineHeight: 1 }}>{weather.temp}°C</div>
