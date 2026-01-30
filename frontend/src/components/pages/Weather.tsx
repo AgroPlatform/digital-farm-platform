@@ -21,7 +21,6 @@ const Weather: React.FC = () => {
   const [forecast, setForecast] = useState<any[]>([]);
   const [fields, setFields] = useState<any[]>([]);
   const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const latestRequestId = useRef(0);
 
   // OSM search state
@@ -76,7 +75,6 @@ const Weather: React.FC = () => {
     if (!normalizedCity) return;
     const requestId = ++latestRequestId.current;
     setLoading(true);
-    setError(null);
     try {
       const [currentRes, forecastRes] = await Promise.all([
         fetch(`${apiBaseUrl}/weather?city=${normalizedCity}`),
@@ -109,12 +107,10 @@ const Weather: React.FC = () => {
       setCity(normalizedCity);
     } catch (err) {
       if (requestId !== latestRequestId.current) return;
-      setError('Weerdata niet beschikbaar. Controleer de backend en probeer opnieuw.');
       console.error("Weather fetch failed", err);
-    } finally {
-      if (requestId === latestRequestId.current) {
-        setLoading(false);
-      }
+    }
+    if (requestId === latestRequestId.current) {
+      setLoading(false);
     }
   }
 
@@ -188,24 +184,8 @@ const Weather: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading || !weather) {
     return <div className="weather-page">🌤️ Weer laden...</div>;
-  }
-
-  if (!weather) {
-    return (
-      <div className="weather-page">
-        <div className="weather-error-banner">
-          <div>
-            <strong>Weerdata kon niet worden geladen.</strong>
-            <p>{error || 'Controleer de backend en probeer opnieuw.'}</p>
-          </div>
-          <button className="refresh-btn" onClick={() => fetchWeather(city)}>
-            🔄 Opnieuw proberen
-          </button>
-        </div>
-      </div>
-    );
   }
 
   const visibilityKm = weather.current.visibility
@@ -250,17 +230,6 @@ const Weather: React.FC = () => {
 
   return (
     <div className="weather-page">
-      {error && (
-        <div className="weather-error-banner">
-          <div>
-            <strong>Weerdata tijdelijk niet beschikbaar.</strong>
-            <p>{error}</p>
-          </div>
-          <button className="refresh-btn" onClick={() => fetchWeather(city)}>
-            🔄 Opnieuw proberen
-          </button>
-        </div>
-      )}
       <div className="page-header">
         <div className="header-content">
           <h1>🌤️ Weer & Klimaat</h1>

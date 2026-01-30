@@ -136,25 +136,6 @@
   margin: 0 auto;
 }
 
-.weather-error-banner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  margin: 0 0 24px 0;
-  border-radius: 12px;
-  background: #fff3f3;
-  border: 1px solid #f5c2c7;
-  color: #8a1f2d;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.weather-error-banner p {
-  margin: 6px 0 0 0;
-  color: #8a1f2d;
-}
-
 .page-header {
   display: flex;
   justify-content: space-between;

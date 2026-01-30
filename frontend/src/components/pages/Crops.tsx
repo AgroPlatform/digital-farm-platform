@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
 import './Crops.css';
 import { getCrops, updateCrop, createCrop } from '../../api/crops';
 import type { Crop } from '../../types/crop';
@@ -10,7 +9,6 @@ const Crops: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterSeason, setFilterSeason] = useState('all');
-  const [error, setError] = useState<string | null>(null);
 
   const cropTypes = ['all', 'Knolgewas', 'Graan', 'Bolgewas', 'Bladgroente'];
   const seasons = ['all', 'Lente', 'Zomer', 'Herfst', 'Voorjaar'];
@@ -44,12 +42,8 @@ const Crops: React.FC = () => {
         if (data.length > 0) {
           setSelectedCrop(data[0].id);
         }
-        setError(null);
       } catch (error) {
         console.error("Failed to fetch crops:", error);
-        const message = error instanceof Error ? error.message : 'Gewassen konden niet worden geladen';
-        setError(message);
-        toast.error(message);
       }
     };
 
@@ -84,8 +78,6 @@ const Crops: React.FC = () => {
       setCrops(crops.map(c => c.id === id ? updatedCrop : c));
     } catch (error) {
       console.error("Failed to update crop status:", error);
-      const message = error instanceof Error ? error.message : 'Status kon niet worden bijgewerkt';
-      toast.error(message);
     }
   };
 
@@ -97,12 +89,6 @@ const Crops: React.FC = () => {
           <p>Beheer en bekijk informatie over alle gewassen</p>
         </div>
       </div>
-      {error && (
-        <div className="crops-error-banner">
-          <strong>Gewassen konden niet worden geladen.</strong>
-          <span>{error}</span>
-        </div>
-      )}
 
       {/* Filters Section - Full Width */}
       <div className="filters-section">
