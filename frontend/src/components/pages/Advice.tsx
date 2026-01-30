@@ -471,6 +471,7 @@ const Advice: React.FC = () => {
 
     if (forecast.dataStatus === "ok" && forecast.summary) {
       const { next24, next72, trend, lowWindWindows, highWindWindows } = forecast.summary;
+      const hasNextAction = nextAction.length > 0;
       const hasIrrigationAction =
         nextAction.includes("irrigatie") ||
         nextAction.includes("beregenen") ||
@@ -517,7 +518,7 @@ const Advice: React.FC = () => {
           );
         }
       }
-      if (lowWindWindows.length > 0) {
+      if (lowWindWindows.length > 0 && (!hasNextAction || hasSprayAction)) {
         const window = lowWindWindows[0];
         advices.push(
           `💨 Lage wind verwacht ${formatForecastMoment(
@@ -530,7 +531,7 @@ const Advice: React.FC = () => {
           );
         }
       }
-      if (highWindWindows.length > 0) {
+      if (highWindWindows.length > 0 && (!hasNextAction || hasSprayAction || hasFertilizeAction)) {
         const window = highWindWindows[0];
         advices.push(
           `🌬️ Windpieken verwacht ${formatForecastMoment(
