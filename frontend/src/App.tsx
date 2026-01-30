@@ -188,7 +188,6 @@ function App() {
       }
 
       handlingRequestError = true;
-      clearAuthState();
       toast.error(error.message || 'Backend niet bereikbaar');
       setTimeout(() => {
         handlingRequestError = false;
