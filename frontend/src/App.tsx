@@ -3,12 +3,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import { login as apiLogin, register as apiRegister } from './api/auth';
 import * as client from './api/client';
-import { setUnauthorizedHandler } from './api/client';
+import { setUnauthorizedHandler, setRequestErrorHandler } from './api/client';
 import * as totpApi from './api/totp';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Weather from './components/pages/Weather';
-import SmartPlanner from './components/pages/SmartPlanner';
+import Advice from './components/pages/Advice';
 import Crops from './components/pages/Crops';
 import Fields from './components/pages/Fields';
 import Settings from './components/pages/Settings';
@@ -172,6 +172,33 @@ function App() {
 
     return () => {
       setUnauthorizedHandler(null);
+    };
+  }, [clearAuthState]);
+
+  useEffect(() => {
+    let handlingRequestError = false;
+
+    const handleRequestError = (error: Error) => {
+      if (handlingRequestError) {
+        return;
+      }
+
+      if (error.name !== 'NetworkError' && error.name !== 'TimeoutError') {
+        return;
+      }
+
+      handlingRequestError = true;
+      clearAuthState();
+      toast.error(error.message || 'Backend niet bereikbaar');
+      setTimeout(() => {
+        handlingRequestError = false;
+      }, 1000);
+    };
+
+    setRequestErrorHandler(handleRequestError);
+
+    return () => {
+      setRequestErrorHandler(null);
     };
   }, [clearAuthState]);
 
@@ -407,7 +434,7 @@ function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="weather" element={<Weather />} />
-          <Route path="smart-planner" element={<SmartPlanner />} />
+          <Route path="advice" element={<Advice />} />
           <Route path="crops" element={<Crops />} />
           <Route path="fields" element={<Fields />} />
           <Route path="settings" element={<Settings />} />

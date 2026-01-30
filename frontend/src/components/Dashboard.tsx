@@ -146,10 +146,10 @@ const Dashboard: React.FC = () => {
     change?: string;
     trend?: "up" | "down";
   }> = [
-    { title: "Totaal Velden", value: totalFields, icon: "🌾", change: "+2", trend: "up" },
+    { title: "Totaal Velden", value: totalFields, icon: "🌾" },
     { title: "Actieve Gewassen", value: totalCrops, icon: "🌽" },
     { title: "Oppervlakte", value: `${totalArea} ha`, icon: "📏" },
-    { title: "Gemiddelde Groei", value: `${avgProgress}%`, icon: "📈", change: "+15%", trend: "up" },
+    { title: "Gemiddelde Groei", value: `${avgProgress}%`, icon: "📈" },
   ];
 
   // Filter alerts
@@ -248,7 +248,7 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* Snelkoppelingen */}
-      <div className="quick-actions-section">
+      {/* <div className="quick-actions-section">
         <h3 className="section-title">Snelkoppelingen</h3>
         <div className="quick-actions">
           <button className="action-button">
@@ -268,7 +268,7 @@ const Dashboard: React.FC = () => {
             Oogst Plannenen
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Two-column layout */}
       <div className="content-grid">

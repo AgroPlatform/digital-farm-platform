@@ -53,7 +53,8 @@ const Weather: React.FC = () => {
       const rep = entry.noon || list.find((item: any) => item.dt_txt.startsWith(dateStr));
       const main = rep?.weather?.[0]?.main || "Clouds";
       const desc = rep?.weather?.[0]?.description || "Onbekend";
-      const rain = Math.round(((rep?.pop ?? 0) as number) * 100);
+  const maxPop = entry.pops.length ? Math.max(...entry.pops) : 0;
+  const rain = Math.round((maxPop as number) * 100);
       const dayLabel = new Date(dateStr).toLocaleDateString("nl-BE", { weekday: "short" });
       return {
         date: dateStr,
