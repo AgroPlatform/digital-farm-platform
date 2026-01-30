@@ -190,7 +190,8 @@ def update_field(
             detail="Field not found"
         )
 
-    for key, value in field_update.model_dump(exclude_unset=True).items():
+    update_data = field_update.model_dump(exclude_unset=True, exclude={"crops"})
+    for key, value in update_data.items():
         setattr(db_field, key, value)
 
     db.commit()
