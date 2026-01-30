@@ -313,6 +313,10 @@ function formatForecastMoment(timestamp: string): string {
   return `${date.toLocaleDateString("nl-BE", { weekday: "short" })} ${time}`;
 }
 
+function normalizeAction(action?: string | null): string {
+  return (action || "").trim().toLowerCase();
+}
+
 const Advice: React.FC = () => {
   const rawApiUrl = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
   const apiBaseUrl = rawApiUrl.replace(/\/+$/, "");
@@ -445,6 +449,7 @@ const Advice: React.FC = () => {
 
   const generateAdvice = (field: Field, weather: WeatherData, forecast: ForecastData) => {
     const advices: string[] = [];
+    const nextAction = normalizeAction(field.next_action);
 
     if (weather.dataStatus !== "ok") {
       return {
@@ -466,6 +471,21 @@ const Advice: React.FC = () => {
 
     if (forecast.dataStatus === "ok" && forecast.summary) {
       const { next24, next72, trend, lowWindWindows, highWindWindows } = forecast.summary;
+      const hasIrrigationAction =
+        nextAction.includes("irrigatie") ||
+        nextAction.includes("beregenen") ||
+        nextAction.includes("irrigation") ||
+        nextAction.includes("watering");
+      const hasSprayAction =
+        nextAction.includes("spuit") ||
+        nextAction.includes("sproei") ||
+        nextAction.includes("bespuit") ||
+        nextAction.includes("spray");
+      const hasHarvestAction =
+        nextAction.includes("oogst") || nextAction.includes("harvest");
+      const hasFertilizeAction =
+        nextAction.includes("bemest") || nextAction.includes("fertil");
+
       if (next24) {
         if (next24.maxPop >= 0.6 || next24.totalRainMm >= 5) {
           advices.push(
@@ -473,6 +493,9 @@ const Advice: React.FC = () => {
               next24.maxPop * 100
             )}% / ~${Math.round(next24.totalRainMm)} mm): stel irrigatie uit`
           );
+          if (hasIrrigationAction) {
+            advices.push("🚿 Volgende actie is irrigatie: wacht tot na de regenpiek");
+          }
         }
       }
       if (next72) {
@@ -501,6 +524,11 @@ const Advice: React.FC = () => {
             window.start
           )}: geschikt moment voor bespuiting`
         );
+        if (hasSprayAction) {
+          advices.push(
+            `🧪 Volgende actie is spuiten: plan rond ${formatForecastMoment(window.start)}`
+          );
+        }
       }
       if (highWindWindows.length > 0) {
         const window = highWindWindows[0];
@@ -509,6 +537,15 @@ const Advice: React.FC = () => {
             window.start
           )}: stel spuit- en mestwerk uit`
         );
+        if (hasSprayAction || hasFertilizeAction) {
+          advices.push("⛔ Volgende actie is gevoelig voor wind: stel uit bij pieken");
+        }
+      }
+      if (hasHarvestAction && next24 && (next24.maxPop >= 0.5 || next24.totalRainMm >= 3)) {
+        advices.push("🌾 Oogst gepland: overweeg te oogsten vóór de regen");
+      }
+      if (hasIrrigationAction && next72 && next72.totalRainMm < 3 && next72.avgTemp >= 22) {
+        advices.push("💧 Weinig regen verwacht: irrigatie inplannen om stress te vermijden");
       }
     } else {
       advices.push("⏱️ Geen korte-termijnverwachting beschikbaar voor planning");
