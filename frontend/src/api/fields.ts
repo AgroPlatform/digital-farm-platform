@@ -80,51 +80,91 @@ export interface ActivityLog {
 
 export async function getFields(): Promise<Field[]> {
   const res = await client.get("/fields/");
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Failed to get fields (${res.status})`);
+  }
   return res.json();
 }
 
 export async function getField(id: number): Promise<Field> {
   const res = await client.get(`/fields/${id}`);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Failed to get field (${res.status})`);
+  }
   return res.json();
 }
 
 export async function createField(data: FieldCreate): Promise<Field> {
   const res = await client.post("/fields/", data);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Failed to create field (${res.status})`);
+  }
   return res.json();
 }
 
 export async function updateField(id: number, data: FieldUpdate): Promise<Field> {
   const res = await client.put(`/fields/${id}`, data);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Failed to update field (${res.status})`);
+  }
   return res.json();
 }
 
 export async function deleteField(id: number): Promise<void> {
-  await client.delete(`/fields/${id}`);
+  const res = await client.delete(`/fields/${id}`);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Failed to delete field (${res.status})`);
+  }
 }
 
 // Crop management for fields
 export async function addCropToField(fieldId: number, data: FieldCropCreate): Promise<Field> {
   const res = await client.post(`/fields/${fieldId}/crops`, data);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Kon gewas niet toevoegen`);
+  }
   return res.json();
 }
 
 export async function removeCropFromField(fieldId: number, cropId: number): Promise<void> {
-  await client.delete(`/fields/${fieldId}/crops/${cropId}`);
+  const res = await client.delete(`/fields/${fieldId}/crops/${cropId}`);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Kon gewas niet verwijderen`);
+  }
 }
 
 export async function getFieldCrops(fieldId: number): Promise<FieldCropDetail[]> {
   const res = await client.get(`/fields/${fieldId}/crops`);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Failed to get field crops (${res.status})`);
+  }
   return res.json();
 }
 
 // Activity management for fields
 export async function createActivityForField(fieldId: number, data: ActivityLogCreate): Promise<ActivityLog> {
   const res = await client.post(`/fields/${fieldId}/activities`, data);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Failed to create activity (${res.status})`);
+  }
   return res.json();
 }
 
 export async function getFieldActivities(fieldId: number): Promise<ActivityLog[]> {
   const res = await client.get(`/fields/${fieldId}/activities`);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(txt || `Failed to get field activities (${res.status})`);
+  }
   return res.json();
 }
 
