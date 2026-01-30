@@ -177,7 +177,7 @@ const SmartPlanner: React.FC = () => {
 
         setAdviceList(adviceArr);
       } catch (err) {
-        console.error("SmartPlanner load error", err);
+        console.error("Advice load error", err);
       } finally {
         setLoading(false);
       }
@@ -214,7 +214,7 @@ const SmartPlanner: React.FC = () => {
   return (
     <div className="dashboard-container p-6">
       <div className="page-header">
-        <h1>📋 Smart Planner</h1>
+        <h1>📋 Advice</h1>
         <p>Automatisch veldadvies op basis van actuele weersomstandigheden</p>
       </div>
 
