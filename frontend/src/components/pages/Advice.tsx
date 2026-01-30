@@ -210,6 +210,9 @@ const Advice: React.FC = () => {
   const generateAdvice = (field: Field, weather: WeatherData) => {
     const advices: string[] = [];
     const priorityAdvices: string[] = [];
+    const addUnique = (list: string[], message: string) => {
+      if (!list.includes(message)) list.push(message);
+    };
 
     if (weather.dataStatus !== "ok") {
       return {
@@ -223,23 +226,31 @@ const Advice: React.FC = () => {
     const nextAction = field.next_action?.trim();
 
     if (nextAction) {
-      priorityAdvices.push(`📌 Volgende actie ingepland: ${nextAction}`);
+      addUnique(priorityAdvices, `📌 Volgende actie ingepland: ${nextAction}`);
     }
 
     if (normalizedStatus === "idle" || normalizedStatus === "inactief") {
-      priorityAdvices.push("🛠️ Status idle: plan onderhoud, inspectie of bodemverbetering");
+      addUnique(priorityAdvices, "🛠️ Status inactief: plan onderhoud, inspectie of bodemverbetering");
     }
 
-    const rainExpected =
-      weather.condition.toLowerCase().includes("regen") ||
-      weather.condition.toLowerCase().includes("rain") ||
+    const normalizedCondition = weather.condition.toLowerCase();
+    const wetExpected =
+      normalizedCondition.includes("regen") ||
+      normalizedCondition.includes("rain") ||
+      normalizedCondition.includes("mist") ||
+      normalizedCondition.includes("fog") ||
       weather.humidity >= 85;
 
-    if (normalizedSoil.includes("klei") && rainExpected) {
+    if (normalizedSoil.includes("klei") && wetExpected) {
       const soilLabel = normalizedSoil.includes("zware klei") ? "zware klei" : "klei";
-      priorityAdvices.push(
+      addUnique(
+        priorityAdvices,
         `🚜 ${soilLabel} + hoge regenverwachting: voorkom bodemverdichting en beperk zware machines`,
       );
+    }
+
+    if (normalizedSoil.includes("zand") && weather.temp >= 25 && weather.humidity <= 55) {
+      addUnique(priorityAdvices, "💧 Zandgrond bij droogte: controleer vocht en plan irrigatie");
     }
 
     const weatherBlock = getWeatherBlockingAdvice(weather);
