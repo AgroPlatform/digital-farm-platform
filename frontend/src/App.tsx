@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import { login as apiLogin, register as apiRegister } from './api/auth';
 import * as client from './api/client';
-import { setUnauthorizedHandler } from './api/client';
+import { setUnauthorizedHandler, setRequestErrorHandler } from './api/client';
 import * as totpApi from './api/totp';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
