@@ -209,12 +209,37 @@ const Advice: React.FC = () => {
 
   const generateAdvice = (field: Field, weather: WeatherData) => {
     const advices: string[] = [];
+    const priorityAdvices: string[] = [];
 
     if (weather.dataStatus !== "ok") {
       return {
         field: field.name,
         advice: "⚠️ Geen advies door ontbrekende weerdata",
       };
+    }
+
+    const normalizedSoil = field.soil_type?.toLowerCase() ?? "";
+    const normalizedStatus = field.status?.toLowerCase() ?? "";
+    const nextAction = field.next_action?.trim();
+
+    if (nextAction) {
+      priorityAdvices.push(`📌 Volgende actie ingepland: ${nextAction}`);
+    }
+
+    if (normalizedStatus === "idle" || normalizedStatus === "inactief") {
+      priorityAdvices.push("🛠️ Status idle: plan onderhoud, inspectie of bodemverbetering");
+    }
+
+    const rainExpected =
+      weather.condition.toLowerCase().includes("regen") ||
+      weather.condition.toLowerCase().includes("rain") ||
+      weather.humidity >= 85;
+
+    if (normalizedSoil.includes("klei") && rainExpected) {
+      const soilLabel = normalizedSoil.includes("zware klei") ? "zware klei" : "klei";
+      priorityAdvices.push(
+        `🚜 ${soilLabel} + hoge regenverwachting: voorkom bodemverdichting en beperk zware machines`,
+      );
     }
 
     const weatherBlock = getWeatherBlockingAdvice(weather);
@@ -224,15 +249,16 @@ const Advice: React.FC = () => {
       field.crops.forEach((crop) => {
         advices.push(...getCropAdvice(crop, weather));
       });
-    } else {
+    } else if (!nextAction) {
       advices.push("ℹ️ Geen gewassen gekoppeld aan dit veld");
     }
 
-    if (advices.length === 0) advices.push("✅ Geen actie nodig");
+    const combinedAdvices = [...priorityAdvices, ...advices];
+    if (combinedAdvices.length === 0) combinedAdvices.push("✅ Geen actie nodig");
 
     return {
       field: field.name,
-      advice: advices.join(" • "),
+      advice: combinedAdvices.join(" • "),
     };
   };
 
