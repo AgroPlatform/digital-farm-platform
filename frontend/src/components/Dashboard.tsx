@@ -248,7 +248,7 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* Snelkoppelingen */}
-      <div className="quick-actions-section">
+      {/* <div className="quick-actions-section">
         <h3 className="section-title">Snelkoppelingen</h3>
         <div className="quick-actions">
           <button className="action-button">
@@ -268,7 +268,7 @@ const Dashboard: React.FC = () => {
             Oogst Plannenen
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Two-column layout */}
       <div className="content-grid">
