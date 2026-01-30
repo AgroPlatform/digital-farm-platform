@@ -107,7 +107,7 @@ async function request(path: string, options: RequestOptions = {}) {
         throw timeoutError;
       }
 
-      const networkError = new Error("Backend niet bereikbaar");
+      const networkError = new Error("Netwerkfout");
       networkError.name = "NetworkError";
       if (requestErrorHandler) {
         requestErrorHandler(networkError);
@@ -115,7 +115,7 @@ async function request(path: string, options: RequestOptions = {}) {
       throw networkError;
     }
 
-    const fallbackError = new Error("Backend niet bereikbaar");
+    const fallbackError = new Error("Netwerkfout");
     fallbackError.name = "NetworkError";
     if (requestErrorHandler) {
       requestErrorHandler(fallbackError);

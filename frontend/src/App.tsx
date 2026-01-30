@@ -188,7 +188,7 @@ function App() {
       }
 
       handlingRequestError = true;
-      toast.error(error.message || 'Backend niet bereikbaar');
+  toast.error(error.message || 'Netwerkfout');
       setTimeout(() => {
         handlingRequestError = false;
       }, 1000);
